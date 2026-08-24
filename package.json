@@ -1,0 +1,53 @@
+{
+  "name": "hermes-turn-router",
+  "version": "0.1.0",
+  "description": "A cache-aware, per-turn model router for Hermes Agent",
+  "repository": {"type": "git", "url": "git+https://github.com/Yueyue673/hermes-turn-router.git"},
+  "homepage": "https://github.com/Yueyue673/hermes-turn-router#readme",
+  "bugs": {"url": "https://github.com/Yueyue673/hermes-turn-router/issues"},
+  "author": "Yueyue673 and contributors",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "hermes-turn-router": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "presets",
+    "integrations",
+    "docs",
+    "examples",
+    "assets",
+    "policy.schema.json"
+  ],
+  "scripts": {
+    "clean": "node scripts/clean.mjs",
+    "prebuild": "npm run clean",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cli": "node scripts/smoke-cli.mjs",
+    "render:assets": "node scripts/render-assets.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check": "npm run typecheck && npm test && npm run build && npm run test:cli"
+  },
+  "keywords": [
+    "hermes-agent",
+    "llm",
+    "model-routing",
+    "semantic-router",
+    "token-optimization"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "sharp": "^0.35.3",
+    "typescript": "^5.7.0",
+    "vitest": "^3.2.0"
+  }
+}

@@ -1,0 +1,6 @@
+{"text":"你好","mode":"auto","expectedTierId":"fast"}
+{"text":"你好","mode":"auto","state":{"currentProvider":"openai-codex","currentModel":"gpt-5.6-sol","currentReasoningEffort":"medium"},"expectedTierId":"fast"}
+{"text":"请认真想清楚，深入审查这个迁移方案","mode":"auto","expectedTierId":"premium"}
+{"text":"省额度，然后迁移生产数据库并部署","mode":"save","expectedTierId":"balanced"}
+{"text":"帮我研究这个长期自动化方案","mode":"auto","estimatedContextTokens":48000,"state":{"currentProvider":"openai-codex","currentModel":"gpt-5.6-luna","currentReasoningEffort":"medium"},"expectedTierId":"fast"}
+{"text":"这条只做格式化","mode":"fixed","fixedTierId":"fast","expectedTierId":"fast"}

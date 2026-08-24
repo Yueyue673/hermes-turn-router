@@ -1,0 +1,35 @@
+name: Routing policy miss
+description: Report an under-route or over-route using anonymized metadata
+labels: [policy]
+body:
+  - type: markdown
+    attributes:
+      value: Do not paste private prompts, credentials, file paths, or tool output. Reduce the case to an anonymized fixture.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Miss type
+      options: [Under-route, Over-route, Unexpected switch, Unexpected cache hold]
+    validations: {required: true}
+  - type: input
+    id: mode
+    attributes: {label: Mode, placeholder: auto}
+    validations: {required: true}
+  - type: input
+    id: expected
+    attributes: {label: Expected target ID}
+    validations: {required: true}
+  - type: input
+    id: actual
+    attributes: {label: Actual target ID}
+    validations: {required: true}
+  - type: textarea
+    id: fixture
+    attributes:
+      label: Minimal anonymized fixture
+      description: Include reason codes and context-size bucket; replace sensitive nouns.
+    validations: {required: true}
+  - type: textarea
+    id: evidence
+    attributes: {label: Verification evidence, description: Explain why one target was measurably more appropriate.}
+    validations: {required: true}

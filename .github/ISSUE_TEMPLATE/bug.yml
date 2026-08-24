@@ -1,0 +1,37 @@
+name: Bug report
+description: Report a reproducible core, CLI, packaging, or documentation problem
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not paste credentials, private prompts, personal file paths, or unsanitized logs.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened, and what should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproduction
+      description: Use public or anonymized data only.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS and Node version
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Relevant sanitized output

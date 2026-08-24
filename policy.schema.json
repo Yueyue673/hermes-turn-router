@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Yueyue673/hermes-turn-router/policy.schema.json",
+  "title": "Hermes Turn Router policy",
+  "type": "object",
+  "required": ["version","tiers","signals","simpleRequestPatterns","continuationPatterns","modeBias","attachmentsWeight","mediumMessageChars","mediumMessageWeight","longMessageChars","longMessageWeight","safetyFloorTierId","switchUpMargin","switchDownMargin","contextTokenStep","maxContextPenalty"],
+  "properties": {
+    "version": {"const": 1},
+    "tiers": {"type":"array","minItems":2,"items":{"type":"object","required":["id","label","provider","model","minScore"],"properties":{"id":{"type":"string","minLength":1},"label":{"type":"string","minLength":1},"provider":{"type":"string","minLength":1},"model":{"type":"string","minLength":1},"reasoningEffort":{"type":"string"},"minScore":{"type":"number"}},"additionalProperties":false}},
+    "signals": {"type":"array","items":{"type":"object","required":["id","reasonCode","pattern","weight"],"properties":{"id":{"type":"string"},"reasonCode":{"type":"string"},"pattern":{"type":"string"},"flags":{"type":"string"},"weight":{"type":"number"},"forceUpgrade":{"type":"boolean"}},"additionalProperties":false}},
+    "simpleRequestPatterns":{"type":"array","items":{"type":"string"}},
+    "continuationPatterns":{"type":"array","items":{"type":"string"}},
+    "modeBias":{"type":"object","required":["auto","save","quality"],"properties":{"auto":{"type":"number"},"save":{"type":"number"},"quality":{"type":"number"}},"additionalProperties":false},
+    "attachmentsWeight":{"type":"number"},
+    "mediumMessageChars":{"type":"integer","minimum":0},
+    "mediumMessageWeight":{"type":"number"},
+    "longMessageChars":{"type":"integer","minimum":0},
+    "longMessageWeight":{"type":"number"},
+    "safetyFloorTierId":{"type":"string"},
+    "switchUpMargin":{"type":"number","minimum":0},
+    "switchDownMargin":{"type":"number","minimum":0},
+    "contextTokenStep":{"type":"integer","minimum":1},
+    "maxContextPenalty":{"type":"number","minimum":0}
+  },
+  "additionalProperties": false
+}

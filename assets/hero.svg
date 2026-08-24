@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640">
+<rect width="1280" height="640" fill="#f1efe8"/>
+<line x1="56" y1="44" x2="1224" y2="44" stroke="#161616" stroke-width="2"/>
+<line x1="56" y1="596" x2="1224" y2="596" stroke="#161616" stroke-width="2"/>
+<text x="56" y="86" font-family="Arial,Helvetica,sans-serif" font-size="20" font-weight="700" fill="#161616">HERMES / COMMUNITY TOOL 01</text>
+<text x="56" y="224" font-family="Arial,Helvetica,sans-serif" font-size="92" font-weight="800" letter-spacing="-5" fill="#161616">TURN</text>
+<text x="56" y="310" font-family="Arial,Helvetica,sans-serif" font-size="92" font-weight="800" letter-spacing="-5" fill="#161616">ROUTER</text>
+<rect x="58" y="346" width="18" height="18" fill="#ff4d00"/>
+<text x="88" y="363" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="700" fill="#161616">PER-TURN · CACHE-AWARE · LOCAL</text>
+<text x="56" y="488" font-family="Arial,Helvetica,sans-serif" font-size="24" fill="#161616">Route each turn without changing</text>
+<text x="56" y="519" font-family="Arial,Helvetica,sans-serif" font-size="24" fill="#161616">your global model.</text>
+<g transform="translate(620,126)" font-family="Arial,Helvetica,sans-serif" fill="#161616">
+  <text x="0" y="0" font-size="15" font-weight="700">ONE TURN / ONE IMMUTABLE DECISION</text>
+  <rect x="0" y="42" width="166" height="70" fill="none" stroke="#161616" stroke-width="2"/>
+  <text x="20" y="84" font-size="23" font-weight="700">USER TURN</text>
+  <line x1="166" y1="77" x2="246" y2="77" stroke="#161616" stroke-width="2"/>
+  <rect x="246" y="42" width="158" height="70" fill="#ff4d00"/>
+  <text x="267" y="84" font-size="23" font-weight="700" fill="#fff">POLICY</text>
+  <line x1="404" y1="77" x2="470" y2="77" stroke="#161616" stroke-width="2"/>
+  <line x1="470" y1="77" x2="470" y2="292" stroke="#161616" stroke-width="2"/>
+  <line x1="470" y1="77" x2="520" y2="77" stroke="#161616" stroke-width="2"/>
+  <line x1="470" y1="184" x2="520" y2="184" stroke="#161616" stroke-width="2"/>
+  <line x1="470" y1="292" x2="520" y2="292" stroke="#161616" stroke-width="2"/>
+  <rect x="520" y="44" width="108" height="64" fill="none" stroke="#161616" stroke-width="2"/>
+  <rect x="520" y="152" width="108" height="64" fill="#161616"/>
+  <rect x="520" y="260" width="108" height="64" fill="none" stroke="#161616" stroke-width="2"/>
+  <text x="540" y="82" font-size="17" font-weight="700">FAST</text>
+  <text x="532" y="190" font-size="15" font-weight="700" fill="#fff">BALANCED</text>
+  <text x="533" y="298" font-size="16" font-weight="700">PREMIUM</text>
+  <text x="0" y="398" font-size="14">NO GLOBAL CONFIG WRITE</text>
+  <text x="246" y="398" font-size="14">NO CLOUD CLASSIFIER</text>
+  <text x="487" y="398" font-size="14">RETRY SAFE</text>
+</g>
+<text x="56" y="624" font-family="Arial,Helvetica,sans-serif" font-size="12" fill="#161616">OPEN SOURCE / MIT</text>
+<text x="1224" y="624" text-anchor="end" font-family="Arial,Helvetica,sans-serif" font-size="12" fill="#161616">YUEYUE673</text>
+</svg>
