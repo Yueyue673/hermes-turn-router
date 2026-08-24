@@ -21,6 +21,30 @@ describe('replayPolicy', () => {
     expect(JSON.stringify(summary)).not.toContain('请认真')
   })
 
+  it('aggregates observed usage without storing prompts', () => {
+    const summary = replayPolicy(codexLunaSolPolicy, [
+      {
+        text: 'first private fixture',
+        observed: { inputTokens: 100, cachedInputTokens: 40, outputTokens: 10, latencyMs: 100, verificationPassed: true }
+      },
+      {
+        text: 'second private fixture',
+        observed: { inputTokens: 200, cachedInputTokens: 160, outputTokens: 20, latencyMs: 300, verificationPassed: false, reanswered: true }
+      }
+    ])
+    expect(summary).toMatchObject({
+      observedEvents: 2,
+      inputTokens: 300,
+      cachedInputTokens: 200,
+      outputTokens: 30,
+      averageLatencyMs: 200,
+      verificationFailures: 1,
+      reanswers: 1
+    })
+    expect(summary.cacheReadRatio).toBeCloseTo(2 / 3)
+    expect(JSON.stringify(summary)).not.toContain('private fixture')
+  })
+
   it('aggregates policy errors instead of stopping the whole replay', () => {
     const summary = replayPolicy(codexLunaSolPolicy, [
       { text: 'hello', oneShotTierId: 'premium', allowedTargetIds: ['fast'] },

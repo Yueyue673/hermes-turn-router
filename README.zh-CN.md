@@ -158,7 +158,7 @@ const decision = routeMessage({
 - [`integrations/hermes/README.md`](integrations/hermes/README.md)
 - [`docs/hermes-integration.md`](docs/hermes-integration.md)
 
-Hermes 目前还没有把这条链路作为稳定的 Desktop 插件能力公开。下一版本会继续完成 Gateway target 授权、持久 turn ledger、能力协商和版本化安装。
+Hermes commit `2584b7c4ec` 已通过版本化 patch 和安装器支持。安装器会检查 commit 与 patch 哈希、创建 ZIP 备份、运行 Gateway 测试，并可构建和部署 Windows unpacked Desktop release。
 
 ## Token 与缓存
 
@@ -178,7 +178,7 @@ npm pack --dry-run
 
 ## 项目状态
 
-`0.1.0` 包含策略核心、CLI、回放评估器、Schema、参考策略和 Hermes 集成契约。下一版本正在完善服务端授权、重启幂等、能力协商和安装更新流程。
+`0.2.0` 新增 Gateway 服务端 target 授权、能力协商、SQLite 持久 turn ledger、accepted 后消费 one-shot、真实 usage 汇总、编译后的 Desktop 插件，以及面向 Hermes commit `2584b7c4ec` 的版本化安装与回滚。
 
 版本记录见 [CHANGELOG.md](CHANGELOG.md)，计划见 [docs/roadmap.md](docs/roadmap.md)。
 

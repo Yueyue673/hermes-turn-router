@@ -42,6 +42,23 @@ One JSON object per line:
 {"text":"hello","mode":"auto","expectedTierId":"fast"}
 ```
 
-Each line accepts the same fields as `RouteInput` except `policy`, plus optional `expectedTierId`. The summary contains counts only: target distribution, switches, cache risk, reasons, errors, and expectation accuracy. It does not echo fixture text.
+Each line accepts the same fields as `RouteInput` except `policy`, plus optional `expectedTierId` and an `observed` block:
+
+```json
+{
+  "text": "hello",
+  "expectedTierId": "fast",
+  "observed": {
+    "inputTokens": 1200,
+    "cachedInputTokens": 900,
+    "outputTokens": 80,
+    "latencyMs": 1400,
+    "verificationPassed": true,
+    "reanswered": false
+  }
+}
+```
+
+The summary contains counts and observed totals: target distribution, switches, cache risk, reasons, errors, expectation accuracy, cache-read ratio, average latency, verification failures, and re-answers. It does not echo fixture text.
 
 Use replay to compare a policy change before and after editing thresholds. Keep private fixtures outside the repository.

@@ -2,5 +2,5 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {"rootDir": "src", "outDir": "dist"},
   "include": ["src/**/*.ts"],
-  "exclude": ["tests"]
+  "exclude": ["tests", "integrations/hermes/desktop/plugin-entry.ts"]
 }

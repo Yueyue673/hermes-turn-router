@@ -1,24 +1,36 @@
 # Roadmap
 
-## 0.1 — auditable core
+## 0.1 — policy and evaluation core
 
-- configurable provider/model tiers;
-- local bilingual rules;
-- safety floor, one-shot, fixed/off/save/quality modes;
-- cache-aware hysteresis and explicit cache-risk metadata;
-- Hermes atomic turn-envelope reference integration;
-- tests and public documentation.
+- configurable provider/model targets
+- local bilingual signals
+- routing modes and safety floors
+- cache-aware hysteresis
+- CLI validation and fixture replay
+- public schema, tests, and documentation
 
-## 0.2 — operational feedback
+## 0.2 — secure Hermes integration
 
-- optional provider usage ingestion;
-- privacy-preserving decision log;
-- replay evaluator for under-route, over-route, switch rate, latency, and token use;
-- policy tuning from verified outcomes, not absence of complaints.
+- Gateway capability negotiation
+- server-authorized target catalog
+- durable SQLite turn ledger
+- prompt-digest conflict detection
+- accepted one-shot lifecycle
+- compiled Desktop plugin
+- versioned patch, install preflight, backup, Desktop deployment, and rollback
+- observed token, cache, latency, verification, and re-answer replay fields
 
-## Later, only if evidence supports it
+## 0.3 — operational calibration
 
-- optional local classifier for ambiguous messages;
-- provider capability discovery;
-- account-entitlement adapters;
-- low-risk online learning with explicit opt-in.
+- local decision log with retention controls
+- provider usage import adapters
+- reports for under-route, over-route, latency, cache behavior, and re-answer rate
+- policy comparison across two replay runs
+- additional tested Hermes commit manifests
+
+## Research track
+
+- local classifier for ambiguous low-risk messages
+- provider capability discovery
+- account entitlement adapters
+- opt-in policy learning from verified outcomes

@@ -1,0 +1,2201 @@
+diff --git a/apps/desktop/src/app/chat/composer/contrib.test.ts b/apps/desktop/src/app/chat/composer/contrib.test.ts
+index d90229a8c8..efab09fde3 100644
+--- a/apps/desktop/src/app/chat/composer/contrib.test.ts
++++ b/apps/desktop/src/app/chat/composer/contrib.test.ts
+@@ -5,6 +5,7 @@ import { registry } from '@/contrib/registry'
+ import { COMPOSER_AREAS, type ComposerMiddleware, runComposerMiddleware } from './contrib'
+ 
+ const disposers: Array<() => void> = []
++const draft = (text: string) => ({ text, turnEnvelope: { clientTurnId: 'test-turn' } })
+ 
+ function addMiddleware(id: string, handler: ComposerMiddleware['handler'], order?: number) {
+   disposers.push(
+@@ -18,23 +19,23 @@ afterEach(() => {
+ 
+ describe('runComposerMiddleware', () => {
+   it('passes the draft through untouched when nothing is registered', async () => {
+-    const draft = { text: 'hello' }
++    const input = draft('hello')
+ 
+-    expect(await runComposerMiddleware(draft)).toBe(draft)
++    expect(await runComposerMiddleware(input)).toBe(input)
+   })
+ 
+   it('chains rewrites in registry order', async () => {
+     addMiddleware('b', d => ({ ...d, text: `${d.text}b` }), 20)
+     addMiddleware('a', d => ({ ...d, text: `${d.text}a` }), 10)
+ 
+-    expect(await runComposerMiddleware({ text: 'x' })).toEqual({ text: 'xab' })
++    expect(await runComposerMiddleware(draft('x'))).toEqual(draft('xab'))
+   })
+ 
+   it('cancels the send when a handler returns null', async () => {
+     addMiddleware('gate', () => null)
+     addMiddleware('later', d => ({ ...d, text: 'never' }), 99)
+ 
+-    expect(await runComposerMiddleware({ text: 'x' })).toBeNull()
++    expect(await runComposerMiddleware(draft('x'))).toBeNull()
+   })
+ 
+   it('treats a throwing handler as pass-through', async () => {
+@@ -43,12 +44,12 @@ describe('runComposerMiddleware', () => {
+     })
+     addMiddleware('after', d => ({ ...d, text: `${d.text}!` }), 99)
+ 
+-    expect(await runComposerMiddleware({ text: 'x' })).toEqual({ text: 'x!' })
++    expect(await runComposerMiddleware(draft('x'))).toEqual(draft('x!'))
+   })
+ 
+   it('supports async handlers', async () => {
+     addMiddleware('async', async d => ({ ...d, text: d.text.toUpperCase() }))
+ 
+-    expect(await runComposerMiddleware({ text: 'quiet' })).toEqual({ text: 'QUIET' })
++    expect(await runComposerMiddleware(draft('quiet'))).toEqual(draft('QUIET'))
+   })
+ })
+diff --git a/apps/desktop/src/app/chat/composer/contrib.ts b/apps/desktop/src/app/chat/composer/contrib.ts
+index ab4f205bb2..393833ff38 100644
+--- a/apps/desktop/src/app/chat/composer/contrib.ts
++++ b/apps/desktop/src/app/chat/composer/contrib.ts
+@@ -25,6 +25,7 @@ import { useMemo } from 'react'
+ import { useContributions } from '@/contrib/react/use-contributions'
+ import { registry } from '@/contrib/registry'
+ import type { TodoItem } from '@/lib/todos'
++import type { TurnExecutionEnvelope } from '@/lib/turn-execution'
+ import type { ComposerAttachment } from '@/store/composer'
+ import type { ComposerAction } from '@/store/composer-actions'
+ 
+@@ -43,6 +44,9 @@ export const COMPOSER_AREAS = {
+ export interface ComposerDraft {
+   text: string
+   attachments?: ComposerAttachment[]
++  /** Immutable, one-turn execution state. Middleware may add a model override,
++   *  but must preserve the clientTurnId assigned before async routing starts. */
++  turnEnvelope: TurnExecutionEnvelope
+ }
+ 
+ /** Payload of a `composer.middleware` data contribution. */
+diff --git a/apps/desktop/src/app/chat/composer/hooks/use-composer-queue.test.tsx b/apps/desktop/src/app/chat/composer/hooks/use-composer-queue.test.tsx
+index bb2c921226..8a3f88d949 100644
+--- a/apps/desktop/src/app/chat/composer/hooks/use-composer-queue.test.tsx
++++ b/apps/desktop/src/app/chat/composer/hooks/use-composer-queue.test.tsx
+@@ -42,6 +42,11 @@ function renderQueueHook(overrides: { busy?: boolean; onCancel?: () => void; onS
+         onCancel,
+         onSteer,
+         onSubmit,
++        prepareDraft: async (text, options) => ({
++          text,
++          attachments: options?.attachments,
++          turnEnvelope: options?.turnEnvelope ?? { clientTurnId: 'queued-test-turn' }
++        }),
+         queueEditRef,
+         queueSessionKey: SESSION_KEY,
+         sessionId: 'rt-session-queue-hook'
+diff --git a/apps/desktop/src/app/chat/composer/hooks/use-composer-queue.ts b/apps/desktop/src/app/chat/composer/hooks/use-composer-queue.ts
+index d1731aaf6e..e4c6ed42ec 100644
+--- a/apps/desktop/src/app/chat/composer/hooks/use-composer-queue.ts
++++ b/apps/desktop/src/app/chat/composer/hooks/use-composer-queue.ts
+@@ -24,6 +24,7 @@ import {
+ import { notify } from '@/store/notifications'
+ 
+ import { cloneAttachments, type QueueEditState } from '../composer-utils'
++import type { ComposerDraft } from '../contrib'
+ import { useComposerScope } from '../scope'
+ import type { ChatBarProps } from '../types'
+ 
+@@ -38,6 +39,10 @@ interface UseComposerQueueArgs {
+   onCancel: ChatBarProps['onCancel']
+   onSteer: ChatBarProps['onSteer']
+   onSubmit: ChatBarProps['onSubmit']
++  prepareDraft: (
++    value: string,
++    options?: { attachments?: ComposerAttachment[]; turnEnvelope?: QueuedPromptEntry['turnEnvelope'] }
++  ) => Promise<ComposerDraft | null>
+   queueEditRef: RefObject<QueueEditState | null>
+   queueSessionKey: ChatBarProps['queueSessionKey']
+   sessionId: string | null | undefined
+@@ -63,6 +68,7 @@ export function useComposerQueue({
+   onCancel,
+   onSteer,
+   onSubmit,
++  prepareDraft,
+   queueEditRef,
+   queueSessionKey,
+   sessionId
+@@ -178,14 +184,26 @@ export function useComposerQueue({
+     return true
+   }
+ 
+-  const queueCurrentDraft = useCallback(() => {
++  const queueCurrentDraft = useCallback(async (): Promise<boolean> => {
+     const text = draftRef.current
+ 
+     if (!activeQueueSessionKey || (!text.trim() && attachments.length === 0)) {
+       return false
+     }
+ 
+-    if (!enqueueQueuedPrompt(activeQueueSessionKey, { text, attachments })) {
++    const prepared = await prepareDraft(text, { attachments })
++
++    if (!prepared) {
++      return false
++    }
++
++    if (
++      !enqueueQueuedPrompt(activeQueueSessionKey, {
++        text: prepared.text,
++        attachments: prepared.attachments ?? [],
++        turnEnvelope: prepared.turnEnvelope
++      })
++    ) {
+       return false
+     }
+ 
+@@ -194,7 +212,7 @@ export function useComposerQueue({
+     triggerHaptic('selection')
+ 
+     return true
+-  }, [activeQueueSessionKey, attachments, clearDraft, draftRef, scope.attachments])
++  }, [activeQueueSessionKey, attachments, clearDraft, draftRef, prepareDraft, scope.attachments])
+ 
+   // All queue drain paths share one lock + send-then-remove sequence.
+   // `pickEntry` lets each caller choose head, by-id, or skip-edited.
+@@ -221,6 +239,7 @@ export function useComposerQueue({
+             ...(entry.displayText ? { displayText: entry.displayText } : {}),
+             fromQueue: true,
+             sessionId: drainRuntimeSessionId,
++            ...(entry.turnEnvelope ? { turnEnvelope: entry.turnEnvelope } : {}),
+             storedSessionId: drainQueueSessionKey
+           })
+         )
+diff --git a/apps/desktop/src/app/chat/composer/hooks/use-composer-submit.test.tsx b/apps/desktop/src/app/chat/composer/hooks/use-composer-submit.test.tsx
+index b05a47a581..edeab7b3d8 100644
+--- a/apps/desktop/src/app/chat/composer/hooks/use-composer-submit.test.tsx
++++ b/apps/desktop/src/app/chat/composer/hooks/use-composer-submit.test.tsx
+@@ -55,7 +55,7 @@ function renderSubmitHook({
+   const onCancel = vi.fn()
+   const onSteer = vi.fn(async () => true)
+   const onSubmit = vi.fn(async () => true)
+-  const queueCurrentDraft = vi.fn(() => true)
++  const queueCurrentDraft = vi.fn(async () => true)
+   let updatePaneVisible: Dispatch<SetStateAction<boolean>> | undefined
+ 
+   const clearDraft = vi.fn(() => {
+diff --git a/apps/desktop/src/app/chat/composer/hooks/use-composer-submit.ts b/apps/desktop/src/app/chat/composer/hooks/use-composer-submit.ts
+index 9435881b43..c8ce150d0e 100644
+--- a/apps/desktop/src/app/chat/composer/hooks/use-composer-submit.ts
++++ b/apps/desktop/src/app/chat/composer/hooks/use-composer-submit.ts
+@@ -35,7 +35,7 @@ interface UseComposerSubmitArgs {
+   onCancel: ChatBarProps['onCancel']
+   onSteer: ChatBarProps['onSteer']
+   onSubmit: ChatBarProps['onSubmit']
+-  queueCurrentDraft: () => boolean
++  queueCurrentDraft: () => Promise<boolean>
+   queueEdit: QueueEditState | null
+   queuedPrompts: QueuedPromptEntry[]
+   sessionId: string | null | undefined
+@@ -212,7 +212,7 @@ export function useComposerSubmit({
+         // queue the whole payload for the next turn. Same for a turn parked on
+         // an approval/sudo/secret prompt: a steer can't reach the model while
+         // the tool batch is blocked, so the message runs as the next turn.
+-        queueCurrentDraft()
++        void queueCurrentDraft()
+       } else {
+         // Stop button (the only way to reach here while busy with an empty
+         // composer — empty Enter is short-circuited in the keydown handler).
+@@ -260,7 +260,7 @@ export function useComposerSubmit({
+       return
+     }
+ 
+-    queueCurrentDraft()
++    void queueCurrentDraft()
+     focusInput()
+   }
+ 
+diff --git a/apps/desktop/src/app/chat/composer/index.tsx b/apps/desktop/src/app/chat/composer/index.tsx
+index 98830fc672..f400ae8c23 100644
+--- a/apps/desktop/src/app/chat/composer/index.tsx
++++ b/apps/desktop/src/app/chat/composer/index.tsx
+@@ -12,6 +12,7 @@ import { PR_COMMENT_URL_RE } from '@/lib/chat-runtime'
+ import { sanitizeComposerInput } from '@/lib/composer-input-sanitize'
+ import { DATA_IMAGE_URL_RE } from '@/lib/embedded-images'
+ import { triggerHaptic } from '@/lib/haptics'
++import { createClientTurnId } from '@/lib/turn-execution'
+ import { cn } from '@/lib/utils'
+ import { interceptsTypedVoiceStop } from '@/lib/voice-stop-word'
+ import { sessionCompacting } from '@/store/compaction'
+@@ -34,7 +35,7 @@ import {
+   slashArgStage
+ } from './composer-utils'
+ import { ContextMenu } from './context-menu'
+-import { COMPOSER_AREAS, runComposerMiddleware } from './contrib'
++import { COMPOSER_AREAS, type ComposerDraft, runComposerMiddleware } from './contrib'
+ import { ComposerControls } from './controls'
+ import { ComposerDirectiveActions } from './directive-actions'
+ import { COMPOSER_DROP_ACTIVE_CLASS, COMPOSER_DROP_FADE_CLASS } from './drop-affordance'
+@@ -115,6 +116,24 @@ export function ChatBar({
+   // is created first); render-time assignment keeps the ref current.
+   const voiceStopRef = useRef<{ active: boolean; end: () => void }>({ active: false, end: () => {} })
+ 
++  const prepareDraft = useCallback(
++    async (
++      value: string,
++      options?: Parameters<ChatBarProps['onSubmit']>[1]
++    ): Promise<ComposerDraft | null> => {
++      if (options?.turnEnvelope) {
++        return { text: value, attachments: options.attachments, turnEnvelope: options.turnEnvelope }
++      }
++
++      return runComposerMiddleware({
++        text: value,
++        attachments: options?.attachments,
++        turnEnvelope: { clientTurnId: createClientTurnId() }
++      })
++    },
++    []
++  )
++
+   // Every send (typed, queued, voice) passes through the contributed
+   // middleware chain first — rewrite / pass-through / cancel. Empty chain =
+   // exact pass-through, so surfaces without contributions are byte-identical.
+@@ -135,15 +154,22 @@ export function ChatBar({
+         return true
+       }
+ 
+-      const draft = await runComposerMiddleware({ text: value, attachments: options?.attachments })
++      // Queue drains and retry paths already carry an immutable turn envelope.
++      // Fresh sends mint the id BEFORE async middleware so every later retry is
++      // the same logical turn, not another provider invocation.
++      const draft = await prepareDraft(value, options)
+ 
+       if (!draft) {
+         return false
+       }
+ 
+-      return onSubmitProp(draft.text, { ...options, attachments: draft.attachments })
++      return onSubmitProp(draft.text, {
++        ...options,
++        attachments: draft.attachments,
++        turnEnvelope: draft.turnEnvelope
++      })
+     },
+-    [onSubmitProp]
++    [onSubmitProp, prepareDraft]
+   )
+ 
+   // Which live composer this instance IS (main | tile) — its attachment set,
+@@ -300,6 +326,7 @@ export function ChatBar({
+     onCancel,
+     onSteer,
+     onSubmit,
++    prepareDraft,
+     queueEditRef,
+     queueSessionKey,
+     sessionId
+diff --git a/apps/desktop/src/app/session/hooks/use-prompt-actions/index.ts b/apps/desktop/src/app/session/hooks/use-prompt-actions/index.ts
+index 6324176f0f..2c20d5c6e3 100644
+--- a/apps/desktop/src/app/session/hooks/use-prompt-actions/index.ts
++++ b/apps/desktop/src/app/session/hooks/use-prompt-actions/index.ts
+@@ -228,7 +228,10 @@ interface PromptActionsOptions {
+   activeSessionIdRef: MutableRefObject<string | null>
+   busyRef: MutableRefObject<boolean>
+   branchCurrentSession: () => Promise<boolean>
+-  createBackendSessionForSend: (preview?: string | null) => Promise<string | null>
++  createBackendSessionForSend: (
++    preview?: string | null,
++    turnEnvelope?: SubmitTextOptions['turnEnvelope']
++  ) => Promise<string | null>
+   getRoutedStoredSessionId: () => null | string
+   getRuntimeIdForStoredSession: (storedSessionId: string) => null | string
+   getRouteToken: () => string
+diff --git a/apps/desktop/src/app/session/hooks/use-prompt-actions/slash.ts b/apps/desktop/src/app/session/hooks/use-prompt-actions/slash.ts
+index 3d80e420e3..65c2f00d5d 100644
+--- a/apps/desktop/src/app/session/hooks/use-prompt-actions/slash.ts
++++ b/apps/desktop/src/app/session/hooks/use-prompt-actions/slash.ts
+@@ -129,7 +129,10 @@ interface SlashCommandDeps {
+   branchCurrentSession: () => Promise<boolean>
+   busyRef: MutableRefObject<boolean>
+   copy: Translations['desktop']
+-  createBackendSessionForSend: (preview?: string | null) => Promise<string | null>
++  createBackendSessionForSend: (
++    preview?: string | null,
++    turnEnvelope?: SubmitTextOptions['turnEnvelope']
++  ) => Promise<string | null>
+   getRoutedStoredSessionId: () => null | string
+   getRuntimeIdForStoredSession: (storedSessionId: string) => null | string
+   handleSkinCommand: (arg: string) => string
+diff --git a/apps/desktop/src/app/session/hooks/use-prompt-actions/submit.ts b/apps/desktop/src/app/session/hooks/use-prompt-actions/submit.ts
+index eb22a8d7c9..1f77c699cf 100644
+--- a/apps/desktop/src/app/session/hooks/use-prompt-actions/submit.ts
++++ b/apps/desktop/src/app/session/hooks/use-prompt-actions/submit.ts
+@@ -6,6 +6,7 @@ import { type ChatMessage, textPart } from '@/lib/chat-messages'
+ import { optimisticAttachmentRef } from '@/lib/chat-runtime'
+ import { sanitizeComposerInput } from '@/lib/composer-input-sanitize'
+ import { setMutableRef } from '@/lib/mutable-ref'
++import { notifyAcceptedTurnFromResponse } from '@/lib/turn-execution'
+ import {
+   isVoicePlaybackActive,
+   markVoicePlaybackInterrupted,
+@@ -55,7 +56,10 @@ interface SubmitPromptDeps {
+   activeSessionIdRef: MutableRefObject<string | null>
+   busyRef: MutableRefObject<boolean>
+   copy: Translations['desktop']
+-  createBackendSessionForSend: (preview?: string | null) => Promise<string | null>
++  createBackendSessionForSend: (
++    preview?: string | null,
++    turnEnvelope?: SubmitTextOptions['turnEnvelope']
++  ) => Promise<string | null>
+   getRoutedStoredSessionId: () => null | string
+   getRuntimeIdForStoredSession: (storedSessionId: string) => null | string
+   getRouteToken: () => string
+@@ -606,7 +610,7 @@ export function useSubmitPrompt(deps: SubmitPromptDeps) {
+ 
+       if (!sessionId) {
+         try {
+-          sessionId = await createBackendSessionForSend(bubbleText)
++          sessionId = await createBackendSessionForSend(bubbleText, options?.turnEnvelope)
+         } catch (err) {
+           dropOptimistic(null)
+           releaseBusy()
+@@ -694,6 +698,7 @@ export function useSubmitPrompt(deps: SubmitPromptDeps) {
+         const submitParams = (targetId: string) => ({
+           session_id: targetId,
+           text,
++          ...(options?.turnEnvelope && { turn: options.turnEnvelope }),
+           ...(interrupted && { interrupted }),
+           // Off-screen widget intent: the gateway types the persisted user
+           // row display_kind=hidden so no client renders it as a bubble.
+@@ -720,7 +725,7 @@ export function useSubmitPrompt(deps: SubmitPromptDeps) {
+         try {
+           const recoverStoredSessionId = targetStoredSessionId ?? selectedStoredSessionIdRef.current
+ 
+-          await withSessionNotFoundResume(
++          const submitResult = await withSessionNotFoundResume(
+             sessionId,
+             recoverStoredSessionId,
+             liveId =>
+@@ -742,6 +747,7 @@ export function useSubmitPrompt(deps: SubmitPromptDeps) {
+             // instead of erroring out and losing the session binding.
+             { alsoTimeout: true }
+           )
++          notifyAcceptedTurnFromResponse(options?.turnEnvelope, submitResult)
+         } catch (firstErr) {
+           if (firstErr instanceof SessionRecoveryAborted) {
+             console.warn('[submit-drift-abort]', firstErr.reason, { phase: 'post-resume-retry' })
+diff --git a/apps/desktop/src/app/session/hooks/use-prompt-actions/utils.ts b/apps/desktop/src/app/session/hooks/use-prompt-actions/utils.ts
+index 35b783a11d..fbd321372b 100644
+--- a/apps/desktop/src/app/session/hooks/use-prompt-actions/utils.ts
++++ b/apps/desktop/src/app/session/hooks/use-prompt-actions/utils.ts
+@@ -4,6 +4,7 @@ import { translateNow, type Translations } from '@/i18n'
+ import type { ChatMessage } from '@/lib/chat-messages'
+ import { type CommandsCatalogLike, filterDesktopCommandsCatalog } from '@/lib/desktop-slash-commands'
+ import { isProviderSetupErrorMessage } from '@/lib/provider-setup-errors'
++import type { TurnExecutionEnvelope } from '@/lib/turn-execution'
+ import type { ComposerAttachment } from '@/store/composer'
+ 
+ export type GatewayRequest = <T>(method: string, params?: Record<string, unknown>, timeoutMs?: number) => Promise<T>
+@@ -675,4 +676,7 @@ export interface SubmitTextOptions {
+   /** Stable stored session id for optimistic/cache updates and stale-runtime
+    *  recovery. Distinct from the runtime session id minted by the gateway. */
+   storedSessionId?: string | null
++  /** Immutable execution snapshot for this logical user turn. The same value
++   *  is reused across queue drain, timeout recovery, and submit retry. */
++  turnEnvelope?: TurnExecutionEnvelope
+ }
+diff --git a/apps/desktop/src/app/session/hooks/use-session-actions/index.ts b/apps/desktop/src/app/session/hooks/use-session-actions/index.ts
+index 7cf4646e6b..4aaf372ff7 100644
+--- a/apps/desktop/src/app/session/hooks/use-session-actions/index.ts
++++ b/apps/desktop/src/app/session/hooks/use-session-actions/index.ts
+@@ -9,6 +9,7 @@ import { useI18n } from '@/i18n'
+ import { type ChatMessage, preserveLocalAssistantErrors, toChatMessages } from '@/lib/chat-messages'
+ import { isMissingRpcMethod } from '@/lib/gateway-rpc'
+ import { recoverInFlightTurnJournal } from '@/lib/inflight-turn-journal'
++import type { TurnExecutionEnvelope } from '@/lib/turn-execution'
+ import { setSessionYolo } from '@/lib/yolo-session'
+ import { normalizeChoices, setClarifyRequest } from '@/store/clarify'
+ import { migrateSessionDraft } from '@/store/composer'
+@@ -442,7 +443,7 @@ export function useSessionActions({
+   )
+ 
+   const createBackendSessionForSend = useCallback(
+-    async (preview: string | null = null): Promise<string | null> => {
++    async (preview: string | null = null, turnEnvelope?: TurnExecutionEnvelope): Promise<string | null> => {
+       const startingStoredSessionId = selectedStoredSessionIdRef.current
+       const startingRouteToken = getRouteToken()
+ 
+@@ -461,7 +462,11 @@ export function useSessionActions({
+               ? workspaceTarget.trim()
+               : $currentCwd.get().trim() || resolveNewSessionCwd()
+ 
+-        const params = await desktopSessionCreateParams(cwd)
++        const params = {
++          ...(await desktopSessionCreateParams(cwd)),
++          ...(turnEnvelope && { first_turn: turnEnvelope })
++        }
++
+         const created = await requestGateway<SessionCreateResponse>('session.create', params)
+         const stored = created.stored_session_id ?? null
+ 
+diff --git a/apps/desktop/src/lib/turn-execution.ts b/apps/desktop/src/lib/turn-execution.ts
+new file mode 100644
+index 0000000000..141398eb32
+--- /dev/null
++++ b/apps/desktop/src/lib/turn-execution.ts
+@@ -0,0 +1,43 @@
++/** Immutable, client-owned identity plus an optional server-resolved target intent. */
++export interface TurnRoutingIntent {
++  targetId: string
++  mode: string
++  reasonCodes: string[]
++  approvalToken?: string
++}
++
++export interface TurnExecutionEnvelope {
++  clientTurnId: string
++  routingIntent?: TurnRoutingIntent
++}
++
++type TurnAcceptedListener = (clientTurnId: string) => void
++const acceptedListeners = new Set<TurnAcceptedListener>()
++
++export function onTurnAccepted(listener: TurnAcceptedListener): () => void {
++  acceptedListeners.add(listener)
++  return () => acceptedListeners.delete(listener)
++}
++
++export function notifyTurnAccepted(clientTurnId: string): void {
++  for (const listener of acceptedListeners) listener(clientTurnId)
++}
++
++export function notifyAcceptedTurnFromResponse(
++  envelope: TurnExecutionEnvelope | undefined,
++  response: unknown
++): boolean {
++  if (!envelope || !response || typeof response !== 'object' || (response as { accepted?: boolean }).accepted !== true) {
++    return false
++  }
++  notifyTurnAccepted(envelope.clientTurnId)
++  return true
++}
++
++export function createClientTurnId(): string {
++  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
++    return crypto.randomUUID()
++  }
++
++  return `turn-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`
++}
+diff --git a/apps/desktop/src/sdk/composer-routing.test.ts b/apps/desktop/src/sdk/composer-routing.test.ts
+new file mode 100644
+index 0000000000..17e43d936b
+--- /dev/null
++++ b/apps/desktop/src/sdk/composer-routing.test.ts
+@@ -0,0 +1,60 @@
++import { beforeEach, describe, expect, it } from 'vitest'
++
++import {
++  createClientTurnId,
++  notifyAcceptedTurnFromResponse,
++  notifyTurnAccepted,
++  onTurnAccepted,
++  type TurnExecutionEnvelope
++} from '@/lib/turn-execution'
++import { $queuedPromptsBySession, enqueueQueuedPrompt, getQueuedPrompts, updateQueuedPromptText } from '@/store/composer-queue'
++
++const SESSION = 'turn-envelope-test'
++
++function envelope(id = 'turn-1'): TurnExecutionEnvelope {
++  return {
++    clientTurnId: id,
++    routingIntent: { mode: 'quality', reasonCodes: ['explicit_quality'], targetId: 'premium' }
++  }
++}
++
++describe('turn execution envelopes', () => {
++  beforeEach(() => {
++    window.localStorage.clear()
++    $queuedPromptsBySession.set({})
++  })
++
++  it('mints stable wire-safe ids', () => {
++    const first = createClientTurnId()
++    const second = createClientTurnId()
++
++    expect(first).toMatch(/^[A-Za-z0-9._:-]+$/)
++    expect(second).not.toBe(first)
++  })
++
++  it('clones a route snapshot into a queued turn', () => {
++    const original = envelope()
++    enqueueQueuedPrompt(SESSION, { attachments: [], text: 'important', turnEnvelope: original })
++    original.routingIntent!.targetId = 'tampered-after-enqueue'
++
++    expect(getQueuedPrompts(SESSION)[0]?.turnEnvelope).toEqual(envelope())
++  })
++
++  it('invalidates the snapshot when queued text is edited', () => {
++    enqueueQueuedPrompt(SESSION, { attachments: [], text: 'before', turnEnvelope: envelope() })
++    const entry = getQueuedPrompts(SESSION)[0]!
++
++    expect(updateQueuedPromptText(SESSION, entry.id, 'after')).toBe(true)
++    expect(getQueuedPrompts(SESSION)[0]?.turnEnvelope).toBeUndefined()
++  })
++
++  it('notifies one-shot state only after the gateway accepts a turn', () => {
++    const accepted: string[] = []
++    const dispose = onTurnAccepted(id => accepted.push(id))
++    expect(notifyAcceptedTurnFromResponse(envelope('turn-in-progress'), { accepted: false })).toBe(false)
++    expect(notifyAcceptedTurnFromResponse(envelope('turn-accepted'), { accepted: true })).toBe(true)
++    dispose()
++    notifyTurnAccepted('turn-after-dispose')
++    expect(accepted).toEqual(['turn-accepted'])
++  })
++})
+diff --git a/apps/desktop/src/sdk/index.ts b/apps/desktop/src/sdk/index.ts
+index 34d78a645b..77d01525cc 100644
+--- a/apps/desktop/src/sdk/index.ts
++++ b/apps/desktop/src/sdk/index.ts
+@@ -62,6 +62,7 @@ import {
+   $connection,
+   $currentCwd,
+   $currentModel,
++  $currentProvider,
+   $gatewayState,
+   $messages,
+   $selectedStoredSessionId,
+@@ -421,6 +422,8 @@ export const host = {
+     gateway: readonlyAtom<string>($gatewayState),
+     /** Current main model slug. */
+     model: readonlyAtom<string>($currentModel),
++    /** Current main provider slug. */
++    provider: readonlyAtom<string>($currentProvider),
+     /** Profile the live gateway is routed to. */
+     profile: readonlyAtom<string>($activeGatewayProfile),
+     /** Window geometry ({ width, height, narrow }). */
+@@ -882,6 +885,7 @@ export {
+   type ComposerAttachmentProvider,
+   type ComposerMiddleware
+ } from '@/app/chat/composer/contrib'
++export { onTurnAccepted, type TurnExecutionEnvelope } from '@/lib/turn-execution'
+ 
+ // -- ui: the design language --------------------------------------------------
+ 
+diff --git a/apps/desktop/src/store/composer-queue.ts b/apps/desktop/src/store/composer-queue.ts
+index d53edca1d3..502c6ae3f1 100644
+--- a/apps/desktop/src/store/composer-queue.ts
++++ b/apps/desktop/src/store/composer-queue.ts
+@@ -1,6 +1,7 @@
+ import { atom } from 'nanostores'
+ 
+ import { SLASH_COMMAND_RE } from '@/lib/chat-runtime'
++import type { TurnExecutionEnvelope } from '@/lib/turn-execution'
+ 
+ import type { ComposerAttachment } from './composer'
+ 
+@@ -13,6 +14,7 @@ export interface QueuedPromptEntry {
+   displayText?: string
+   attachments: ComposerAttachment[]
+   queuedAt: number
++  turnEnvelope?: TurnExecutionEnvelope
+ }
+ 
+ /** Whether a queued entry can ride a mid-turn redirect: text-only, non-empty,
+@@ -125,7 +127,12 @@ export const getQueuedPrompts = (key: string | null | undefined): QueuedPromptEn
+ 
+ export const enqueueQueuedPrompt = (
+   key: string | null | undefined,
+-  payload: { text: string; attachments: ComposerAttachment[]; displayText?: string }
++  payload: {
++    text: string
++    attachments: ComposerAttachment[]
++    displayText?: string
++    turnEnvelope?: TurnExecutionEnvelope
++  }
+ ): null | QueuedPromptEntry => {
+   const sid = sidOf(key)
+ 
+@@ -137,6 +144,7 @@ export const enqueueQueuedPrompt = (
+     id: nextId(),
+     text: payload.text,
+     ...(payload.displayText ? { displayText: payload.displayText } : {}),
++    ...(payload.turnEnvelope ? { turnEnvelope: structuredClone(payload.turnEnvelope) } : {}),
+     attachments: cloneAttachments(payload.attachments),
+     queuedAt: Date.now()
+   }
+@@ -237,7 +245,7 @@ export const updateQueuedPrompt = (
+     // The user rewrote the text, so any display projection it carried (a
+     // `/skill` invocation standing in for the expanded body) no longer
+     // describes it — what they typed is now what sends.
+-    const { displayText: _dropped, ...rest } = entry
++    const { displayText: _dropped, turnEnvelope: _staleTurnEnvelope, ...rest } = entry
+ 
+     return { ...rest, text: update.text, attachments }
+   })
+diff --git a/tests/tui_gateway/test_turn_router_mature.py b/tests/tui_gateway/test_turn_router_mature.py
+new file mode 100644
+index 0000000000..700d663300
+--- /dev/null
++++ b/tests/tui_gateway/test_turn_router_mature.py
+@@ -0,0 +1,113 @@
++import json
++from pathlib import Path
++
++import pytest
++
++from tui_gateway import server
++
++
++def write_catalog(home: Path):
++    directory = home / "turn-router"
++    directory.mkdir(parents=True, exist_ok=True)
++    (directory / "targets.json").write_text(json.dumps({
++        "schema_version": 1,
++        "max_cost_class": "premium",
++        "allow_cross_provider": False,
++        "targets": [
++            {"id": "fast", "label": "Fast", "provider": "p", "model": "m1", "cost_class": "low"},
++            {"id": "premium", "label": "Premium", "provider": "p", "model": "m2", "reasoning_effort": "high", "cost_class": "premium"},
++        ],
++    }), encoding="utf-8")
++
++
++def session(home: Path):
++    return {
++        "agent": None,
++        "attached_images": [],
++        "history_lock": __import__("threading").Lock(),
++        "model_override": {"provider": "p", "model": "baseline"},
++        "profile_home": str(home),
++        "session_key": "lineage-root",
++    }
++
++
++def test_turn_intent_rejects_client_model_strings_and_accepts_target_id():
++    with pytest.raises(ValueError, match="client model overrides"):
++        server._normalize_turn_envelope({
++            "clientTurnId": "turn-1",
++            "modelOverride": {"provider": "evil", "model": "expensive"},
++        })
++    normalized = server._normalize_turn_envelope({
++        "clientTurnId": "turn-1",
++        "routingIntent": {"targetId": "fast", "mode": "auto", "reasonCodes": ["simple"]},
++    })
++    assert normalized == {
++        "client_turn_id": "turn-1",
++        "routing_intent": {"target_id": "fast", "mode": "auto", "reason_codes": ["simple"]},
++    }
++
++
++def test_gateway_resolves_target_and_persists_accept_complete(tmp_path):
++    write_catalog(tmp_path)
++    live = session(tmp_path)
++    envelope = server._normalize_turn_envelope({
++        "clientTurnId": "turn-accepted",
++        "routingIntent": {"targetId": "premium", "mode": "quality", "reasonCodes": ["quality_mode"]},
++    })
++    assert server._claim_client_turn(live, envelope, "hello", "ui-1") is True
++    assert envelope["model_override"] == {"provider": "p", "model": "m2", "reasoning_effort": "high"}
++    server._accept_client_turn(live, envelope, "ui-1")
++    row = server._turn_router_runtime(live).ledger.get(
++        profile=server._turn_router_runtime(live).profile_scope,
++        lineage="lineage-root",
++        turn_id="turn-accepted",
++    )
++    assert row["state"] == "accepted"
++    server._complete_client_turn(live, envelope, "ui-1")
++    row = server._turn_router_runtime(live).ledger.get(
++        profile=server._turn_router_runtime(live).profile_scope,
++        lineage="lineage-root",
++        turn_id="turn-accepted",
++    )
++    assert row["state"] == "completed"
++
++
++def test_accepted_turn_is_duplicate_after_new_runtime_session(tmp_path):
++    write_catalog(tmp_path)
++    first = session(tmp_path)
++    envelope = server._normalize_turn_envelope({"clientTurnId": "turn-retry"})
++    assert server._claim_client_turn(first, envelope, "hello", "ui-1") is True
++    server._accept_client_turn(first, envelope, "ui-1")
++    resumed = session(tmp_path)
++    retry = server._normalize_turn_envelope({"clientTurnId": "turn-retry"})
++    assert server._claim_client_turn(resumed, retry, "hello", "ui-2") is False
++
++
++def test_pre_accept_release_allows_retry(tmp_path):
++    write_catalog(tmp_path)
++    live = session(tmp_path)
++    envelope = server._normalize_turn_envelope({"clientTurnId": "turn-release"})
++    assert server._claim_client_turn(live, envelope, "hello", "ui-1") is True
++    server._release_client_turn(live, envelope, "ui-1")
++    retry = server._normalize_turn_envelope({"clientTurnId": "turn-release"})
++    assert server._claim_client_turn(live, retry, "hello", "ui-1") is True
++
++
++def test_in_progress_and_accepted_duplicates_are_distinct(tmp_path):
++    write_catalog(tmp_path)
++    first_session = session(tmp_path)
++    first = server._normalize_turn_envelope({"clientTurnId": "turn-state"})
++    assert server._claim_client_turn(first_session, first, "hello", "ui-1") is True
++    concurrent = server._normalize_turn_envelope({"clientTurnId": "turn-state"})
++    assert server._claim_client_turn(session(tmp_path), concurrent, "hello", "ui-2") is False
++    assert concurrent["_ledger_outcome"] == "in_progress"
++    assert concurrent["_ledger_state"] == "reserved"
++    server._accept_client_turn(first_session, first, "ui-1")
++    accepted_retry = server._normalize_turn_envelope({"clientTurnId": "turn-state"})
++    assert server._claim_client_turn(session(tmp_path), accepted_retry, "hello", "ui-3") is False
++    assert accepted_retry["_ledger_outcome"] == "duplicate"
++    assert accepted_retry["_ledger_state"] == "accepted"
++
++
++def test_router_capability_method_is_registered():
++    assert "router.capabilities" in server._methods
+diff --git a/tui_gateway/compute_host.py b/tui_gateway/compute_host.py
+index 2cb60cf203..11f7df5cf6 100644
+--- a/tui_gateway/compute_host.py
++++ b/tui_gateway/compute_host.py
+@@ -490,6 +490,7 @@ class ComputeHost:
+                 session,
+                 text,
+                 display_kind=frame.get("display_kind") or None,
++                turn_envelope=frame.get("turn_envelope"),
+             )
+             run_thread = session.get("_run_thread")
+             if run_thread is not None and hasattr(run_thread, "join"):
+diff --git a/tui_gateway/methods_config.py b/tui_gateway/methods_config.py
+index 314b38d904..2a34f15086 100644
+--- a/tui_gateway/methods_config.py
++++ b/tui_gateway/methods_config.py
+@@ -352,6 +352,24 @@ def _(rid, params: dict) -> dict:
+     return _err(rid, 4002, f"unknown config key: {key}")
+ 
+ 
++@method("router.capabilities")
++def _(rid, params: dict) -> dict:
++    """Return the profile-scoped, server-authorized routing target catalog."""
++    try:
++        from tui_gateway.turn_router.runtime import runtime_for_home
++
++        return _ok(rid, runtime_for_home(_hermes_home).capabilities())
++    except FileNotFoundError:
++        return _err(
++            rid,
++            4042,
++            "Hermes Turn Router target catalog is not installed for this profile",
++            data={"capability": "composer.turn-target.v1", "available": False},
++        )
++    except Exception as exc:
++        return _err(rid, 4002, str(exc), data={"capability": "composer.turn-target.v1"})
++
++
+ @method("setup.status")
+ def _(rid, params: dict) -> dict:
+     try:
+diff --git a/tui_gateway/methods_prompt.py b/tui_gateway/methods_prompt.py
+index fa0dcd949f..c7e68fbd42 100644
+--- a/tui_gateway/methods_prompt.py
++++ b/tui_gateway/methods_prompt.py
+@@ -328,6 +328,74 @@ def _(rid, params: dict) -> dict:
+         or params.get("truncate_before_row_id") is not None
+         or params.get("truncate_before_message_id") is not None
+     )
++    try:
++        turn_envelope = _normalize_turn_envelope(params.get("turn"))
++    except ValueError as exc:
++        return _err(rid, 4002, str(exc))
++
++    first_turn = session.get("first_turn_envelope")
++    if first_turn:
++        if not turn_envelope:
++            return _err(rid, 4002, "first prompt is missing its bound turn envelope")
++        if first_turn.get("client_turn_id") != turn_envelope.get("client_turn_id"):
++            return _err(rid, 4002, "first prompt turn id does not match session.create")
++        if first_turn != turn_envelope:
++            return _err(rid, 4002, "first prompt turn envelope changed after session.create")
++
++    turn_claimed = False
++    turn_claim_error = None
++
++    def _reserve_turn() -> bool:
++        nonlocal turn_claimed, turn_claim_error
++        if turn_claimed:
++            return True
++        try:
++            turn_claimed = _claim_client_turn(session, turn_envelope, text, sid)
++        except ValueError as exc:
++            turn_claim_error = exc
++            turn_claimed = False
++        return turn_claimed
++
++    def _release_turn_reservation() -> None:
++        nonlocal turn_claimed
++        if turn_claimed:
++            _release_client_turn(session, turn_envelope, sid)
++            turn_claimed = False
++
++    def _consume_first_turn_binding() -> None:
++        _accept_client_turn(session, turn_envelope, sid)
++        if first_turn:
++            session.pop("first_turn_envelope", None)
++
++    def _duplicate_turn_response():
++        if turn_claim_error is not None:
++            return _err(
++                rid,
++                4002,
++                str(turn_claim_error),
++                data={"code": getattr(turn_claim_error, "code", "turn_invalid")},
++            )
++        outcome = (turn_envelope or {}).get("_ledger_outcome")
++        state = (turn_envelope or {}).get("_ledger_state")
++        if outcome == "in_progress":
++            return _ok(
++                rid,
++                {
++                    "status": "in_progress",
++                    "accepted": False,
++                    "client_turn_id": (turn_envelope or {}).get("client_turn_id"),
++                },
++            )
++        return _ok(
++            rid,
++            {
++                "status": "duplicate",
++                "accepted": outcome == "duplicate" and state in ("accepted", "completed"),
++                "ledger_state": state,
++                "client_turn_id": (turn_envelope or {}).get("client_turn_id"),
++            },
++        )
++
+     if has_truncation and isinstance(text, str):
+         # A rewind/regenerate replays a turn from what the transcript shows. A
+         # skill turn shows its invocation, so re-expand it here — otherwise
+@@ -354,11 +422,19 @@ def _(rid, params: dict) -> dict:
+                 busy_transport = t or session.get("transport")
+             else:
+                 break
++        if not _reserve_turn():
++            return _duplicate_turn_response()
+         busy_response = _handle_busy_submit(
+             rid, sid, session, text, busy_transport,
+-            queued=bool(params.get("queued")),
++            queued=bool(params.get("queued")) or bool((turn_envelope or {}).get("model_override")),
++            turn_envelope=turn_envelope,
+         )
+         if busy_response is not None:
++            if busy_response.get("error"):
++                _release_turn_reservation()
++            else:
++                _consume_first_turn_binding()
++                busy_response.setdefault("result", {})["accepted"] = True
+             return busy_response
+         # The old turn finished between the two lock acquisitions. Retry the
+         # claim so this prompt starts normally instead of being stranded in a
+@@ -626,6 +702,11 @@ def _(rid, params: dict) -> dict:
+                     "truncation would erase the entire session transcript; "
+                     "resubmit with confirm_empty_truncate=true if this is intended",
+                 )
++            # Reserve only after every fail-closed truncation check, but before
++            # the first durable/in-memory mutation. A rejected preflight remains
++            # retryable with the same logical client turn id.
++            if not _reserve_turn():
++                return _duplicate_turn_response()
+             # Info for routine rewind/edit cuts; warning only when the client
+             # explicitly opts into wiping the whole transcript.
+             log_fn = logger.warning if not truncated else logger.info
+@@ -695,6 +776,7 @@ def _(rid, params: dict) -> dict:
+                             exc,
+                             exc_info=True,
+                         )
++                        _release_turn_reservation()
+                         return _err(
+                             rid,
+                             5008,
+@@ -718,6 +800,8 @@ def _(rid, params: dict) -> dict:
+                     ]
+             session["history"] = truncated
+             session["history_version"] = int(session.get("history_version", 0)) + 1
++        if not _reserve_turn():
++            return _duplicate_turn_response()
+         session["running"] = True
+         session["_turn_cancel_requested"] = False
+         session["last_active"] = time.time()
+@@ -725,9 +809,16 @@ def _(rid, params: dict) -> dict:
+ 
+     if turn_isolation:
+         isolated_response = _submit_prompt_to_compute_host(
+-            rid, sid, session, text, display_kind=display_kind
++            rid,
++            sid,
++            session,
++            text,
++            display_kind=display_kind,
++            turn_envelope=turn_envelope,
+         )
+         if not isolated_response.get("error"):
++            _consume_first_turn_binding()
++            isolated_response.setdefault("result", {})["accepted"] = True
+             if survivor_user_row_ids is not None:
+                 # The truncation already happened inline above (memory + DB),
+                 # before compute-host dispatch — the rebind payload applies to
+@@ -757,6 +848,7 @@ def _(rid, params: dict) -> dict:
+             session["running"] = False
+             session["last_active"] = time.time()
+             _clear_inflight_turn(session)
++        _release_turn_reservation()
+         if is_disk_full_error(exc):
+             return _err(
+                 rid,
+@@ -769,6 +861,7 @@ def _(rid, params: dict) -> dict:
+             5071,
+             f"session storage could not be written: {exc}",
+         )
++    _consume_first_turn_binding()
+     _start_agent_build(sid, session)
+ 
+     def run_after_agent_ready() -> None:
+@@ -812,7 +905,14 @@ def _(rid, params: dict) -> dict:
+                     },
+                 )
+                 return
+-        _run_prompt_submit(rid, sid, session, text, display_kind=display_kind)
++        _run_prompt_submit(
++            rid,
++            sid,
++            session,
++            text,
++            display_kind=display_kind,
++            turn_envelope=turn_envelope,
++        )
+ 
+     run_thread = threading.Thread(target=run_after_agent_ready, daemon=True)
+     # Keep a handle so session.interrupt can tell a live turn from a stuck
+@@ -823,6 +923,7 @@ def _(rid, params: dict) -> dict:
+         rid,
+         {
+             "status": "streaming",
++            "accepted": True,
+             **(
+                 {"survivor_user_row_ids": survivor_user_row_ids}
+                 if survivor_user_row_ids is not None
+diff --git a/tui_gateway/methods_session.py b/tui_gateway/methods_session.py
+index 564271ea13..784e28fdc3 100644
+--- a/tui_gateway/methods_session.py
++++ b/tui_gateway/methods_session.py
+@@ -42,6 +42,11 @@ def _(rid, params: dict) -> dict:
+     profile = (params.get("profile") or "").strip() or None
+     profile_home = _profile_home(profile)
+ 
++    try:
++        first_turn = _normalize_turn_envelope(params.get("first_turn"))
++    except ValueError as exc:
++        return _err(rid, 4002, str(exc))
++
+     # The desktop composer owns its model/effort/fast as plain UI state and ships
+     # it on every session.create. Honor each as a PER-SESSION override (built into
+     # the agent below) — never a global config write, so picking a model/effort
+@@ -89,6 +94,7 @@ def _(rid, params: dict) -> dict:
+             "history": history,
+             "history_lock": threading.Lock(),
+             "history_version": 0,
++            "first_turn_envelope": first_turn,
+             "image_counter": 0,
+             "cwd": resolved_cwd,
+             "inflight_turn": None,
+diff --git a/tui_gateway/server.py b/tui_gateway/server.py
+index ff08824ea3..f9e5e969a0 100644
+--- a/tui_gateway/server.py
++++ b/tui_gateway/server.py
+@@ -9,6 +9,7 @@ import json
+ import logging
+ import os
+ import queue
++import re
+ import subprocess
+ import sys
+ import threading
+@@ -160,6 +161,9 @@ _cfg_lock = threading.Lock()
+ _profile_ui_meta_lock = threading.Lock()
+ _sessions_lock = threading.RLock()  # reentrant: _close_session_by_id may run under callers that already hold it
+ _prompt_lock = threading.Lock()
++_claimed_turn_ids_lock = threading.Lock()
++_claimed_turn_ids: set[str] = set()
++_claimed_turn_id_order: list[str] = []
+ _cfg_cache: dict | None = None
+ _cfg_mtime: float | None = None
+ _cfg_path = None
+@@ -292,6 +296,9 @@ _LONG_HANDLERS = frozenset(
+         # the WS read loop and causing false "needs setup" (#50005 family).
+         "setup.runtime_check",
+         "setup.status",
++        # Subscription detection calls the provider usage endpoint. Keep that
++        # network request off the WebSocket reader thread.
++        "account.subscription",
+         # Voice RPCs can trigger check_voice_requirements() → STT provider
+         # auto-detect → a SYNCHRONOUS faster-whisper lazy install (uv/pip
+         # subprocess with a 300s timeout). Inline they stall the WS reader
+@@ -1769,6 +1776,7 @@ def _compute_host_turn_frame(
+     image_paths: list[str] | None = None,
+     queued_prompt_generation: int | None = None,
+     display_kind: str | None = None,
++    turn_envelope: dict | None = None,
+ ) -> dict:
+     with session["history_lock"]:
+         history = list(session.get("history", []))
+@@ -1796,6 +1804,7 @@ def _compute_host_turn_frame(
+         "source": _session_source(session),
+         "attached_images": attached_images,
+         "queued_prompt_generation": queued_prompt_generation,
++        "turn_envelope": copy.deepcopy(turn_envelope) if turn_envelope else None,
+     }
+ 
+ 
+@@ -1874,6 +1883,7 @@ def _submit_prompt_to_compute_host(
+     image_paths: list[str] | None = None,
+     queued_prompt_generation: int | None = None,
+     display_kind: str | None = None,
++    turn_envelope: dict | None = None,
+ ) -> dict:
+     cfg = _load_dashboard_process_isolation_config()
+     frame = _compute_host_turn_frame(
+@@ -1884,6 +1894,7 @@ def _submit_prompt_to_compute_host(
+         image_paths=image_paths,
+         queued_prompt_generation=queued_prompt_generation,
+         display_kind=display_kind,
++        turn_envelope=turn_envelope,
+     )
+ 
+     def _complete(done: dict) -> None:
+@@ -2047,6 +2058,159 @@ def _err(rid, code: int, msg: str, data=None) -> dict:
+     return {"jsonrpc": "2.0", "id": rid, "error": error}
+ 
+ 
++def _normalize_turn_envelope(raw: Any) -> dict | None:
++    """Validate the immutable client turn identity and optional target intent.
++
++    Provider, model, and reasoning values are never accepted from the client.
++    The Gateway resolves a target id through its profile-scoped server catalog.
++    """
++    if raw is None:
++        return None
++    from tui_gateway.turn_router.protocol import TurnCoordinator, TurnProtocolError
++
++    try:
++        intent = TurnCoordinator.normalize(raw)
++    except TurnProtocolError as exc:
++        raise ValueError(str(exc)) from exc
++    result: dict = {"client_turn_id": intent.client_turn_id}
++    if intent.target_id:
++        result["routing_intent"] = {
++            "target_id": intent.target_id,
++            "mode": intent.mode,
++            "reason_codes": list(intent.reason_codes),
++            **({"approval_token": intent.approval_token} if intent.approval_token else {}),
++        }
++    return result
++
++
++def _turn_router_raw(envelope: dict) -> dict:
++    raw: dict = {"clientTurnId": envelope["client_turn_id"]}
++    routing = envelope.get("routing_intent")
++    if routing:
++        raw["routingIntent"] = {
++            "targetId": routing["target_id"],
++            "mode": routing.get("mode") or "auto",
++            "reasonCodes": list(routing.get("reason_codes") or []),
++            **({"approvalToken": routing["approval_token"]} if routing.get("approval_token") else {}),
++        }
++    return raw
++
++
++def _turn_prompt_digest(session: dict, text: Any) -> str:
++    image_facts = []
++    for raw_path in session.get("attached_images", []):
++        try:
++            path = Path(str(raw_path))
++            stat = path.stat()
++            image_facts.append((path.name, stat.st_size, stat.st_mtime_ns))
++        except OSError:
++            image_facts.append((Path(str(raw_path)).name, None, None))
++    payload = json.dumps(
++        {"text": text if isinstance(text, str) else str(text), "images": image_facts},
++        ensure_ascii=False,
++        sort_keys=True,
++        separators=(",", ":"),
++    )
++    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
++
++
++def _turn_router_runtime(session: dict):
++    from tui_gateway.turn_router.catalog import CatalogError
++    from tui_gateway.turn_router.runtime import runtime_for_home
++
++    home = _session_home(session)
++    try:
++        return runtime_for_home(home)
++    except (CatalogError, FileNotFoundError):
++        return None
++
++
++def _claim_client_turn(session: dict, envelope: dict | None, text: Any = "", sid: str = "") -> bool:
++    """Reserve one logical turn before the first accepted side effect."""
++    if not envelope:
++        return True
++    runtime = _turn_router_runtime(session)
++    if runtime is not None:
++        current_override = session.get("model_override") or {}
++        agent = session.get("agent")
++        current_provider = (
++            current_override.get("provider")
++            or getattr(agent, "provider_name", None)
++            or getattr(agent, "provider", None)
++        )
++        prepared = runtime.prepare(
++            _turn_router_raw(envelope),
++            session=session,
++            prompt_digest=_turn_prompt_digest(session, text),
++            current_provider=str(current_provider) if current_provider else None,
++            fallback_session_id=sid,
++        )
++        envelope["_ledger_outcome"] = prepared.ledger.outcome
++        envelope["_ledger_state"] = prepared.ledger.state
++        if prepared.ledger.outcome in ("duplicate", "in_progress"):
++            return False
++        if prepared.target is not None:
++            envelope["model_override"] = prepared.target.override_dict()
++        session.setdefault("_turn_router_prepared", {})[envelope["client_turn_id"]] = prepared
++        return True
++    if envelope.get("routing_intent"):
++        raise ValueError("Hermes Turn Router target catalog is not installed for this profile")
++
++    # Compatibility path for installations that have the generic turn id bridge
++    # but have not installed a Router catalog yet.
++    turn_id = envelope["client_turn_id"]
++    with _claimed_turn_ids_lock:
++        if turn_id in _claimed_turn_ids:
++            return False
++        _claimed_turn_ids.add(turn_id)
++        _claimed_turn_id_order.append(turn_id)
++        if len(_claimed_turn_id_order) > 4096:
++            retired = _claimed_turn_id_order.pop(0)
++            _claimed_turn_ids.discard(retired)
++        return True
++
++
++def _accept_client_turn(session: dict, envelope: dict | None, sid: str = "") -> None:
++    if not envelope:
++        return
++    prepared = (session.get("_turn_router_prepared") or {}).get(envelope.get("client_turn_id"))
++    runtime = _turn_router_runtime(session)
++    if prepared is not None and runtime is not None:
++        if not runtime.accept(prepared, session=session, fallback_session_id=sid):
++            raise ValueError("Hermes Turn Router reservation lease was lost before acceptance")
++
++
++def _complete_client_turn(session: dict, envelope: dict | None, sid: str = "") -> None:
++    if not envelope:
++        return
++    prepared = (session.get("_turn_router_prepared") or {}).pop(envelope.get("client_turn_id"), None)
++    runtime = _turn_router_runtime(session)
++    if prepared is not None and runtime is not None:
++        if not runtime.complete(prepared, session=session, fallback_session_id=sid):
++            raise ValueError("Hermes Turn Router reservation lease was lost before completion")
++
++
++def _release_client_turn(session: dict, envelope: dict | None, sid: str = "") -> None:
++    """Release a reserved turn id when submit fails before acceptance."""
++    if not envelope:
++        return
++    turn_id = envelope.get("client_turn_id")
++    prepared = (session.get("_turn_router_prepared") or {}).pop(turn_id, None)
++    runtime = _turn_router_runtime(session)
++    if prepared is not None and runtime is not None:
++        runtime.release(prepared, session=session, fallback_session_id=sid)
++        envelope.pop("model_override", None)
++        return
++    if not turn_id:
++        return
++    with _claimed_turn_ids_lock:
++        _claimed_turn_ids.discard(turn_id)
++        try:
++            _claimed_turn_id_order.remove(turn_id)
++        except ValueError:
++            pass
++
++
+ def method(name: str):
+     def dec(fn):
+         _methods[name] = fn
+@@ -4888,6 +5052,7 @@ def _snapshot_agent_model_runtime(agent) -> dict:
+         "base_url": getattr(agent, "base_url", ""),
+         "api_mode": getattr(agent, "api_mode", ""),
+         "primary_runtime": copy.deepcopy(getattr(agent, "_primary_runtime", None)),
++        "reasoning_config": copy.deepcopy(getattr(agent, "reasoning_config", None)),
+     }
+ 
+ 
+@@ -4895,17 +5060,17 @@ def _restore_agent_model_runtime(agent, snapshot: dict | None) -> None:
+     """Restore an agent model runtime captured before a one-turn override."""
+     if not snapshot or agent is None:
+         return
++    restored_model = False
+     primary = snapshot.get("primary_runtime")
+     if primary and hasattr(agent, "_restore_primary_runtime"):
+         try:
+             agent._primary_runtime = copy.deepcopy(primary)
+             agent._fallback_activated = True
+             agent._rate_limited_until = 0
+-            if agent._restore_primary_runtime():
+-                return
++            restored_model = bool(agent._restore_primary_runtime())
+         except Exception:
+             logger.debug("TUI one-turn model restore via primary runtime failed", exc_info=True)
+-    if hasattr(agent, "switch_model"):
++    if not restored_model and hasattr(agent, "switch_model"):
+         agent.switch_model(
+             new_model=snapshot.get("model", ""),
+             new_provider=snapshot.get("provider", ""),
+@@ -4913,6 +5078,8 @@ def _restore_agent_model_runtime(agent, snapshot: dict | None) -> None:
+             base_url=snapshot.get("base_url", ""),
+             api_mode=snapshot.get("api_mode", ""),
+         )
++    if "reasoning_config" in snapshot:
++        agent.reasoning_config = copy.deepcopy(snapshot.get("reasoning_config"))
+ 
+ 
+ def _apply_model_switch(
+@@ -4924,6 +5091,7 @@ def _apply_model_switch(
+     pin_session_override: bool = True,
+     parsed_flags: Any | None = None,
+     persist_override: bool | None = None,
++    transient_turn: bool = False,
+ ) -> dict:
+     from hermes_cli.model_switch import (
+         parse_model_switch_args,
+@@ -5086,13 +5254,14 @@ def _apply_model_switch(
+                 f"Model switch to {result.new_model} failed ({exc}); "
+                 f"staying on {getattr(agent, 'model', current_model)}."
+             ) from exc
+-        _restart_slash_worker(sid, session)
+-        _persist_live_session_runtime(session)
+-        _persist_live_session_system_prompt(session)
+-        _append_model_switch_marker(
+-            session, model=result.new_model, provider=result.target_provider
+-        )
+-        _emit("session.info", sid, _session_info(agent, session))
++        if not transient_turn:
++            _restart_slash_worker(sid, session)
++            _persist_live_session_runtime(session)
++            _persist_live_session_system_prompt(session)
++            _append_model_switch_marker(
++                session, model=result.new_model, provider=result.target_provider
++            )
++            _emit("session.info", sid, _session_info(agent, session))
+         if one_turn:
+             session["one_turn_model_restore"] = restore_snapshot
+         else:
+@@ -8090,6 +8259,7 @@ def _enqueue_prompt(
+     text: Any,
+     transport: Any,
+     image_paths: list[str] | None = None,
++    turn_envelope: dict | None = None,
+ ) -> None:
+     """Stash a message to run as the very next turn once the live one ends.
+ 
+@@ -8116,6 +8286,8 @@ def _enqueue_prompt(
+         if original and text.strip() == original:
+             return
+     queued = {"text": text, "transport": transport}
++    if turn_envelope:
++        queued["turn_envelope"] = copy.deepcopy(turn_envelope)
+     if image_paths:
+         queued["image_paths"] = image_paths
+     existing = session.get("queued_prompt")
+@@ -8125,6 +8297,8 @@ def _enqueue_prompt(
+         and isinstance(text, str)
+         and not existing.get("image_paths")
+         and not image_paths
++        and not existing.get("turn_envelope")
++        and not turn_envelope
+         and not session.get("queued_prompts")
+     ):
+         prev = existing["text"]
+@@ -8248,7 +8422,13 @@ def _interrupt_busy_session(sid: str, session: dict, agent: Any) -> None:
+ 
+ 
+ def _handle_busy_submit(
+-    rid, sid: str, session: dict, text: Any, transport: Any, queued: bool = False
++    rid,
++    sid: str,
++    session: dict,
++    text: Any,
++    transport: Any,
++    queued: bool = False,
++    turn_envelope: dict | None = None,
+ ) -> dict | None:
+     """Apply the ``display.busy_input_mode`` policy to a prompt that lands while
+     a turn is in flight, instead of rejecting it with ``session busy``.
+@@ -8326,7 +8506,13 @@ def _handle_busy_submit(
+             if image_paths:
+                 session["attached_images"] = image_paths + list(session.get("attached_images", []))
+             return None
+-        _enqueue_prompt(session, text, transport, image_paths=image_paths)
++        _enqueue_prompt(
++            session,
++            text,
++            transport,
++            image_paths=image_paths,
++            turn_envelope=turn_envelope,
++        )
+         session["last_active"] = time.time()
+ 
+     # Attachments need a separate model invocation. Queue them without
+@@ -8387,6 +8573,11 @@ def _drain_queued_prompt(rid, sid: str, session: dict) -> bool:
+             session["running"] = False
+             return True
+     dispatch_failed = False
++    turn_kwargs = (
++        {"turn_envelope": queued["turn_envelope"]}
++        if queued.get("turn_envelope")
++        else {}
++    )
+     try:
+         if use_compute_host:
+             if queued.get("image_paths"):
+@@ -8397,10 +8588,16 @@ def _drain_queued_prompt(rid, sid: str, session: dict) -> bool:
+                     queued["text"],
+                     image_paths=queued["image_paths"],
+                     queued_prompt_generation=queue_generation,
++                    **turn_kwargs,
+                 )
+             else:
+                 resp = _submit_prompt_to_compute_host(
+-                    rid, sid, session, queued["text"], queued_prompt_generation=queue_generation
++                    rid,
++                    sid,
++                    session,
++                    queued["text"],
++                    queued_prompt_generation=queue_generation,
++                    **turn_kwargs,
+                 )
+             if resp.get("error"):
+                 message = str(((resp.get("error") or {}).get("message")) or "queued prompt failed")
+@@ -8418,6 +8615,7 @@ def _drain_queued_prompt(rid, sid: str, session: dict) -> bool:
+                     queued["text"],
+                     image_paths=queued["image_paths"],
+                     queued_prompt_generation=queue_generation,
++                    **turn_kwargs,
+                 )
+             else:
+                 _run_prompt_submit(
+@@ -8426,6 +8624,7 @@ def _drain_queued_prompt(rid, sid: str, session: dict) -> bool:
+                     session,
+                     queued["text"],
+                     queued_prompt_generation=queue_generation,
++                    **turn_kwargs,
+                 )
+     except Exception as exc:
+         print(
+@@ -10685,6 +10884,7 @@ def _run_prompt_submit(
+     display_metadata: dict | None = None,
+     image_paths: list[str] | None = None,
+     queued_prompt_generation: int | None = None,
++    turn_envelope: dict | None = None,
+ ) -> bool:
+     with session["history_lock"]:
+         if session.get("_closing"):
+@@ -10790,6 +10990,12 @@ def _run_prompt_submit(
+             # the sudo.request overlay. (secret capture is a module global, so
+             # re-running is a harmless no-op.)
+             _wire_callbacks(sid)
++            override = (turn_envelope or {}).get("model_override")
++            if override and one_turn_restore:
++                # Retire a legacy `/model --once` before capability/config sync.
++                # The Router will snapshot the final agent below.
++                _restore_agent_model_runtime(agent, one_turn_restore)
++                one_turn_restore = None
+             # Skip the config-model sync while a /model --once override is
+             # active: the once-model is intentionally not pinned as a session
+             # model_override (it must not persist), so without this guard the
+@@ -10809,6 +11015,35 @@ def _run_prompt_submit(
+             # the turn runs. No-op for every other session shape.
+             _sync_bot_capabilities(sid, session)
+             agent = session["agent"]
++            if override:
++                # Capability sync may replace session["agent"]. Apply the atomic
++                # per-turn override only after every possible replacement, then
++                # snapshot/restore that final live agent.
++                from types import SimpleNamespace
++
++                parsed_switch = SimpleNamespace(
++                    model_input=override["model"],
++                    explicit_provider=override["provider"],
++                    is_global=False,
++                    is_session=False,
++                    is_once=True,
++                )
++                _apply_model_switch(
++                    sid,
++                    session,
++                    override["model"],
++                    confirm_expensive_model=True,
++                    pin_session_override=False,
++                    parsed_flags=parsed_switch,
++                    persist_override=False,
++                    transient_turn=True,
++                )
++                one_turn_restore = session.pop("one_turn_model_restore", None)
++                effort = override.get("reasoning_effort")
++                if effort:
++                    from hermes_constants import parse_reasoning_effort
++
++                    agent.reasoning_config = parse_reasoning_effort(effort)
+             # Snapshot after turn-start model sync. A deferred switch mutates
+             # history and its version; that mutation belongs to this turn.
+             with session["history_lock"]:
+@@ -11446,6 +11681,13 @@ def _run_prompt_submit(
+                 )
+                 _emit("error", sid, {"message": str(e)})
+         finally:
++            # A terminal outcome reached this process. Accepted turns become
++            # completed; a process crash before this point intentionally leaves
++            # the durable row in accepted state so retries remain idempotent.
++            try:
++                _complete_client_turn(session, turn_envelope, sid)
++            except Exception:
++                logger.exception("failed to complete Hermes Turn Router ledger entry")
+             # Drop both local snapshots of the pre-turn history before asking
+             # glibc to return pages. session["history"] already points at the
+             # new/pruned result; retaining either list defeats this trim.
+diff --git a/tui_gateway/turn_router/__init__.py b/tui_gateway/turn_router/__init__.py
+new file mode 100644
+index 0000000000..97fa20c40d
+--- /dev/null
++++ b/tui_gateway/turn_router/__init__.py
+@@ -0,0 +1,17 @@
++"""Server-authorized per-turn routing primitives for Hermes Gateway."""
++
++from .catalog import ApprovalTokenManager, CatalogError, TargetCatalog, TargetSpec
++from .ledger import LedgerResult, TurnLedger
++from .protocol import NormalizedTurnIntent, TurnCoordinator, TurnProtocolError
++
++__all__ = [
++    "ApprovalTokenManager",
++    "CatalogError",
++    "LedgerResult",
++    "NormalizedTurnIntent",
++    "TargetCatalog",
++    "TargetSpec",
++    "TurnCoordinator",
++    "TurnLedger",
++    "TurnProtocolError",
++]
+diff --git a/tui_gateway/turn_router/catalog.py b/tui_gateway/turn_router/catalog.py
+new file mode 100644
+index 0000000000..8f822f5485
+--- /dev/null
++++ b/tui_gateway/turn_router/catalog.py
+@@ -0,0 +1,212 @@
++from __future__ import annotations
++
++import base64
++import binascii
++import hashlib
++import hmac
++import json
++import re
++import time
++from dataclasses import dataclass
++from pathlib import Path
++from typing import Any
++
++_TARGET_ID_CHARS = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._:-")
++_COST_RANK = {"free": 0, "low": 1, "standard": 2, "premium": 3}
++_MODEL_TOKEN_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:/+-]{0,255}\Z")
++_REASONING_LEVELS = {"none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"}
++
++
++class CatalogError(ValueError):
++    def __init__(self, code: str, message: str):
++        super().__init__(message)
++        self.code = code
++
++
++def _strict_bool(data: dict[str, Any], key: str, default: bool) -> bool:
++    if key not in data:
++        return default
++    value = data[key]
++    if type(value) is not bool:
++        raise CatalogError("catalog_invalid", f"{key} must be a boolean")
++    return value
++
++
++@dataclass(frozen=True)
++class TargetSpec:
++    id: str
++    label: str
++    provider: str
++    model: str
++    reasoning_effort: str | None
++    cost_class: str
++    enabled: bool
++    requires_approval: bool
++
++    def public_dict(self) -> dict[str, Any]:
++        return {
++            "id": self.id,
++            "label": self.label,
++            "cost_class": self.cost_class,
++            "enabled": self.enabled,
++            "requires_approval": self.requires_approval,
++        }
++
++    def override_dict(self) -> dict[str, str]:
++        result = {"provider": self.provider, "model": self.model}
++        if self.reasoning_effort:
++            result["reasoning_effort"] = self.reasoning_effort
++        return result
++
++
++class ApprovalTokenManager:
++    """Short-lived HMAC approval tokens bound to one logical turn and target."""
++
++    def __init__(self, secret: bytes, *, now=time.time):
++        if len(secret) < 32:
++            raise ValueError("approval secret must contain at least 32 bytes")
++        self._secret = secret
++        self._now = now
++
++    @staticmethod
++    def _payload(profile: str, lineage: str, turn_id: str, target_id: str, expires_at: int) -> bytes:
++        return "".join((profile, lineage, turn_id, target_id, str(expires_at))).encode("utf-8")
++
++    def issue(self, *, profile: str, lineage: str, turn_id: str, target_id: str, ttl_seconds: int = 120) -> str:
++        if ttl_seconds <= 0 or ttl_seconds > 600:
++            raise ValueError("approval ttl must be between 1 and 600 seconds")
++        expires_at = int(self._now()) + ttl_seconds
++        payload = self._payload(profile, lineage, turn_id, target_id, expires_at)
++        signature = hmac.new(self._secret, payload, hashlib.sha256).digest()
++        payload_encoded = base64.urlsafe_b64encode(payload).decode("ascii").rstrip("=")
++        signature_encoded = base64.urlsafe_b64encode(signature).decode("ascii").rstrip("=")
++        return f"v1.{payload_encoded}.{signature_encoded}"
++
++    def verify(self, token: str | None, *, profile: str, lineage: str, turn_id: str, target_id: str) -> bool:
++        if not token:
++            return False
++        try:
++            version, payload_encoded, signature_encoded = token.split(".", 2)
++            if version != "v1":
++                return False
++            payload = base64.urlsafe_b64decode(payload_encoded + "=" * (-len(payload_encoded) % 4))
++            signature = base64.urlsafe_b64decode(signature_encoded + "=" * (-len(signature_encoded) % 4))
++            fields = payload.decode("utf-8").split("")
++            if len(fields) != 5:
++                return False
++            token_profile, token_lineage, token_turn, token_target, expiry_text = fields
++            expires_at = int(expiry_text)
++        except (ValueError, UnicodeError, binascii.Error):
++            return False
++        expected_payload = self._payload(profile, lineage, turn_id, target_id, expires_at)
++        expected_signature = hmac.new(self._secret, expected_payload, hashlib.sha256).digest()
++        return (
++            hmac.compare_digest(payload, expected_payload)
++            and hmac.compare_digest(signature, expected_signature)
++            and expires_at >= int(self._now())
++            and token_profile == profile
++            and token_lineage == lineage
++            and token_turn == turn_id
++            and token_target == target_id
++        )
++
++
++class TargetCatalog:
++    CAPABILITY = "composer.turn-target.v1"
++
++    def __init__(
++        self,
++        targets: list[TargetSpec],
++        *,
++        max_cost_class: str = "standard",
++        allow_cross_provider: bool = True,
++    ):
++        if max_cost_class not in _COST_RANK:
++            raise CatalogError("catalog_invalid", f"unknown max cost class: {max_cost_class}")
++        by_id: dict[str, TargetSpec] = {}
++        if len(targets) > 64:
++            raise CatalogError("catalog_invalid", "target catalog exceeds 64 entries")
++        for target in targets:
++            if not target.id or len(target.id) > 64 or any(char not in _TARGET_ID_CHARS for char in target.id):
++                raise CatalogError("catalog_invalid", f"invalid target id: {target.id}")
++            if target.id in by_id:
++                raise CatalogError("catalog_invalid", f"duplicate target id: {target.id}")
++            if target.cost_class not in _COST_RANK:
++                raise CatalogError("catalog_invalid", f"invalid cost class for {target.id}")
++            if len(target.label) > 128:
++                raise CatalogError("catalog_invalid", f"target label is too long: {target.id}")
++            if not _MODEL_TOKEN_RE.fullmatch(target.provider) or not _MODEL_TOKEN_RE.fullmatch(target.model):
++                raise CatalogError("catalog_invalid", f"provider/model token is invalid for {target.id}")
++            if target.reasoning_effort and target.reasoning_effort not in _REASONING_LEVELS:
++                raise CatalogError("catalog_invalid", f"reasoning effort is invalid for {target.id}")
++            by_id[target.id] = target
++        if not by_id:
++            raise CatalogError("catalog_invalid", "at least one target is required")
++        self._targets = by_id
++        self.max_cost_class = max_cost_class
++        self.allow_cross_provider = allow_cross_provider
++
++    @classmethod
++    def from_dict(cls, data: dict[str, Any]) -> "TargetCatalog":
++        if data.get("schema_version") != 1:
++            raise CatalogError("catalog_invalid", "unsupported catalog schema version")
++        raw_targets = data.get("targets")
++        if not isinstance(raw_targets, list):
++            raise CatalogError("catalog_invalid", "targets must be a list")
++        targets = []
++        for raw in raw_targets:
++            if not isinstance(raw, dict):
++                raise CatalogError("catalog_invalid", "each target must be an object")
++            targets.append(
++                TargetSpec(
++                    id=str(raw.get("id") or ""),
++                    label=str(raw.get("label") or raw.get("id") or ""),
++                    provider=str(raw.get("provider") or ""),
++                    model=str(raw.get("model") or ""),
++                    reasoning_effort=(str(raw["reasoning_effort"]) if raw.get("reasoning_effort") else None),
++                    cost_class=str(raw.get("cost_class") or "standard"),
++                    enabled=_strict_bool(raw, "enabled", True),
++                    requires_approval=_strict_bool(raw, "requires_approval", False),
++                )
++            )
++        return cls(
++            targets,
++            max_cost_class=str(data.get("max_cost_class") or "standard"),
++            allow_cross_provider=_strict_bool(data, "allow_cross_provider", True),
++        )
++
++    @classmethod
++    def load(cls, path: str | Path) -> "TargetCatalog":
++        return cls.from_dict(json.loads(Path(path).read_text(encoding="utf-8")))
++
++    def capabilities(self) -> dict[str, Any]:
++        return {
++            "capability": self.CAPABILITY,
++            "protocol_version": 1,
++            "max_cost_class": self.max_cost_class,
++            "allow_cross_provider": self.allow_cross_provider,
++            "targets": [target.public_dict() for target in self._targets.values() if target.enabled],
++        }
++
++    def resolve(
++        self,
++        target_id: str,
++        *,
++        current_provider: str | None,
++        approved: bool = False,
++    ) -> TargetSpec:
++        target = self._targets.get(target_id)
++        if target is None:
++            raise CatalogError("target_unknown", f"unknown routing target: {target_id}")
++        if not target.enabled:
++            raise CatalogError("target_disabled", f"routing target is disabled: {target_id}")
++        if _COST_RANK[target.cost_class] > _COST_RANK[self.max_cost_class]:
++            raise CatalogError("cost_cap_exceeded", f"routing target exceeds the configured cost cap: {target_id}")
++        if not self.allow_cross_provider:
++            if not current_provider:
++                raise CatalogError("current_provider_unavailable", "current provider is unavailable")
++            if target.provider != current_provider:
++                raise CatalogError("cross_provider_denied", f"cross-provider routing is disabled: {target_id}")
++        if target.requires_approval and not approved:
++            raise CatalogError("approval_required", f"routing target requires approval: {target_id}")
++        return target
+diff --git a/tui_gateway/turn_router/ledger.py b/tui_gateway/turn_router/ledger.py
+new file mode 100644
+index 0000000000..103b05aa03
+--- /dev/null
++++ b/tui_gateway/turn_router/ledger.py
+@@ -0,0 +1,200 @@
++from __future__ import annotations
++
++import hashlib
++import json
++import secrets
++import sqlite3
++import threading
++import time
++from contextlib import closing
++from dataclasses import dataclass
++from pathlib import Path
++from typing import Any, Literal
++
++LedgerStatus = Literal["reserved", "accepted", "completed"]
++
++
++@dataclass(frozen=True)
++class LedgerResult:
++    outcome: Literal["reserved", "in_progress", "duplicate", "conflict"]
++    state: LedgerStatus | None
++    lease_id: str | None = None
++    envelope_hash: str | None = None
++
++
++class TurnLedger:
++    """Durable idempotency ledger keyed by profile, lineage, and client turn ID."""
++
++    def __init__(self, path: str | Path, *, now=time.time, new_lease=None):
++        self.path = str(path)
++        self._now = now
++        self._new_lease = new_lease or (lambda: secrets.token_urlsafe(24))
++        self._lock = threading.RLock()
++        self._initialize()
++
++    def _connect(self) -> sqlite3.Connection:
++        connection = sqlite3.connect(self.path, timeout=5, isolation_level=None)
++        connection.row_factory = sqlite3.Row
++        connection.execute("PRAGMA busy_timeout=5000")
++        connection.execute("PRAGMA journal_mode=WAL")
++        return connection
++
++    def _initialize(self) -> None:
++        Path(self.path).parent.mkdir(parents=True, exist_ok=True)
++        with closing(self._connect()) as connection:
++            connection.execute(
++                """
++                CREATE TABLE IF NOT EXISTS turn_router_ledger (
++                    profile TEXT NOT NULL,
++                    session_lineage TEXT NOT NULL,
++                    client_turn_id TEXT NOT NULL,
++                    envelope_hash TEXT NOT NULL,
++                    lease_id TEXT NOT NULL,
++                    state TEXT NOT NULL CHECK(state IN ('reserved','accepted','completed')),
++                    reserved_at INTEGER NOT NULL,
++                    accepted_at INTEGER,
++                    completed_at INTEGER,
++                    expires_at INTEGER NOT NULL,
++                    PRIMARY KEY(profile, session_lineage, client_turn_id)
++                )
++                """
++            )
++            columns = {row[1] for row in connection.execute("PRAGMA table_info(turn_router_ledger)")}
++            if "lease_id" not in columns:
++                connection.execute("ALTER TABLE turn_router_ledger ADD COLUMN lease_id TEXT NOT NULL DEFAULT ''")
++                connection.execute(
++                    "UPDATE turn_router_ledger SET lease_id=lower(hex(randomblob(24))) WHERE lease_id=''"
++                )
++            connection.execute(
++                "CREATE INDEX IF NOT EXISTS idx_turn_router_ledger_expiry ON turn_router_ledger(expires_at)"
++            )
++
++    @staticmethod
++    def envelope_hash(value: dict[str, Any]) -> str:
++        canonical = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
++        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
++
++    def reserve(
++        self,
++        *,
++        profile: str,
++        lineage: str,
++        turn_id: str,
++        envelope_hash: str,
++        reservation_ttl: int = 300,
++    ) -> LedgerResult:
++        now = int(self._now())
++        with self._lock, closing(self._connect()) as connection:
++            connection.execute("BEGIN IMMEDIATE")
++            connection.execute(
++                "DELETE FROM turn_router_ledger WHERE rowid IN "
++                "(SELECT rowid FROM turn_router_ledger WHERE expires_at < ? LIMIT 100)",
++                (now,),
++            )
++            row = connection.execute(
++                "SELECT envelope_hash, lease_id, state, expires_at FROM turn_router_ledger "
++                "WHERE profile=? AND session_lineage=? AND client_turn_id=?",
++                (profile, lineage, turn_id),
++            ).fetchone()
++            if row is None:
++                lease_id = self._new_lease()
++                connection.execute(
++                    "INSERT INTO turn_router_ledger "
++                    "(profile,session_lineage,client_turn_id,envelope_hash,lease_id,state,reserved_at,expires_at) "
++                    "VALUES(?,?,?,?,?, 'reserved', ?, ?)",
++                    (profile, lineage, turn_id, envelope_hash, lease_id, now, now + reservation_ttl),
++                )
++                connection.execute("COMMIT")
++                return LedgerResult("reserved", "reserved", lease_id, envelope_hash)
++            if row["envelope_hash"] != envelope_hash:
++                connection.execute("COMMIT")
++                return LedgerResult("conflict", row["state"], None, row["envelope_hash"])
++            if row["state"] in ("accepted", "completed"):
++                connection.execute("COMMIT")
++                return LedgerResult("duplicate", row["state"], None, row["envelope_hash"])
++            if int(row["expires_at"]) >= now:
++                connection.execute("COMMIT")
++                return LedgerResult("in_progress", "reserved", None, row["envelope_hash"])
++            lease_id = self._new_lease()
++            connection.execute(
++                "UPDATE turn_router_ledger SET lease_id=?, reserved_at=?, expires_at=? "
++                "WHERE profile=? AND session_lineage=? AND client_turn_id=?",
++                (lease_id, now, now + reservation_ttl, profile, lineage, turn_id),
++            )
++            connection.execute("COMMIT")
++            return LedgerResult("reserved", "reserved", lease_id, envelope_hash)
++
++    def accept(
++        self,
++        *,
++        profile: str,
++        lineage: str,
++        turn_id: str,
++        lease_id: str,
++        envelope_hash: str,
++        retention_seconds: int = 604800,
++    ) -> bool:
++        now = int(self._now())
++        with self._lock, closing(self._connect()) as connection:
++            cursor = connection.execute(
++                "UPDATE turn_router_ledger SET state='accepted', accepted_at=?, expires_at=? "
++                "WHERE profile=? AND session_lineage=? AND client_turn_id=? AND state='reserved' "
++                "AND lease_id=? AND envelope_hash=? AND expires_at>=?",
++                (now, now + retention_seconds, profile, lineage, turn_id, lease_id, envelope_hash, now),
++            )
++            return bool(cursor.rowcount)
++
++    def complete(
++        self,
++        *,
++        profile: str,
++        lineage: str,
++        turn_id: str,
++        lease_id: str,
++        envelope_hash: str,
++        retention_seconds: int = 2592000,
++    ) -> bool:
++        now = int(self._now())
++        with self._lock, closing(self._connect()) as connection:
++            cursor = connection.execute(
++                "UPDATE turn_router_ledger SET state='completed', completed_at=?, expires_at=? "
++                "WHERE profile=? AND session_lineage=? AND client_turn_id=? AND state IN ('reserved','accepted') "
++                "AND lease_id=? AND envelope_hash=? AND expires_at>=?",
++                (now, now + retention_seconds, profile, lineage, turn_id, lease_id, envelope_hash, now),
++            )
++            return bool(cursor.rowcount)
++
++    def release(
++        self,
++        *,
++        profile: str,
++        lineage: str,
++        turn_id: str,
++        lease_id: str,
++        envelope_hash: str,
++    ) -> bool:
++        now = int(self._now())
++        with self._lock, closing(self._connect()) as connection:
++            cursor = connection.execute(
++                "DELETE FROM turn_router_ledger WHERE profile=? AND session_lineage=? "
++                "AND client_turn_id=? AND state='reserved' AND lease_id=? AND envelope_hash=? AND expires_at>=?",
++                (profile, lineage, turn_id, lease_id, envelope_hash, now),
++            )
++            return bool(cursor.rowcount)
++
++    def cleanup(self, *, limit: int = 1000) -> int:
++        with self._lock, closing(self._connect()) as connection:
++            cursor = connection.execute(
++                "DELETE FROM turn_router_ledger WHERE rowid IN "
++                "(SELECT rowid FROM turn_router_ledger WHERE expires_at < ? LIMIT ?)",
++                (int(self._now()), max(1, min(limit, 10000))),
++            )
++            return cursor.rowcount
++
++    def get(self, *, profile: str, lineage: str, turn_id: str) -> dict[str, Any] | None:
++        with closing(self._connect()) as connection:
++            row = connection.execute(
++                "SELECT * FROM turn_router_ledger WHERE profile=? AND session_lineage=? AND client_turn_id=?",
++                (profile, lineage, turn_id),
++            ).fetchone()
++            return dict(row) if row else None
+diff --git a/tui_gateway/turn_router/protocol.py b/tui_gateway/turn_router/protocol.py
+new file mode 100644
+index 0000000000..18eeca01d5
+--- /dev/null
++++ b/tui_gateway/turn_router/protocol.py
+@@ -0,0 +1,166 @@
++from __future__ import annotations
++
++import re
++from dataclasses import dataclass
++from typing import Any
++
++from .catalog import ApprovalTokenManager, CatalogError, TargetCatalog, TargetSpec
++from .ledger import LedgerResult, TurnLedger
++
++_TOKEN_RE = re.compile(r"[A-Za-z0-9._:-]{1,128}\Z")
++
++
++class TurnProtocolError(ValueError):
++    def __init__(self, code: str, message: str):
++        super().__init__(message)
++        self.code = code
++
++
++@dataclass(frozen=True)
++class NormalizedTurnIntent:
++    client_turn_id: str
++    target_id: str | None
++    mode: str
++    reason_codes: tuple[str, ...]
++    approval_token: str | None
++
++    def hash_payload(self, prompt_digest: str) -> dict[str, Any]:
++        return {
++            "client_turn_id": self.client_turn_id,
++            "target_id": self.target_id,
++            "mode": self.mode,
++            "reason_codes": self.reason_codes,
++            "prompt_digest": prompt_digest,
++        }
++
++
++@dataclass(frozen=True)
++class PreparedTurn:
++    intent: NormalizedTurnIntent
++    target: TargetSpec | None
++    ledger: LedgerResult
++    envelope_hash: str
++    profile: str
++    lineage: str
++
++
++class TurnCoordinator:
++    def __init__(
++        self,
++        *,
++        catalog: TargetCatalog,
++        ledger: TurnLedger,
++        approval_tokens: ApprovalTokenManager | None = None,
++    ):
++        self.catalog = catalog
++        self.ledger = ledger
++        self.approval_tokens = approval_tokens
++
++    @staticmethod
++    def normalize(raw: Any) -> NormalizedTurnIntent:
++        if not isinstance(raw, dict):
++            raise TurnProtocolError("turn_invalid", "turn intent must be an object")
++        turn_id = str(raw.get("clientTurnId") or raw.get("client_turn_id") or "").strip()
++        if not _TOKEN_RE.fullmatch(turn_id):
++            raise TurnProtocolError("turn_invalid", "client turn id is invalid")
++        if raw.get("modelOverride") is not None or raw.get("model_override") is not None:
++            raise TurnProtocolError("turn_invalid", "client model overrides are not accepted")
++        routing = raw.get("routingIntent") or raw.get("routing_intent")
++        if routing is None:
++            return NormalizedTurnIntent(
++                client_turn_id=turn_id,
++                target_id=None,
++                mode="off",
++                reason_codes=(),
++                approval_token=None,
++            )
++        if not isinstance(routing, dict):
++            raise TurnProtocolError("turn_invalid", "routing intent must be an object")
++        target_id = str(routing.get("targetId") or routing.get("target_id") or "").strip()
++        if not _TOKEN_RE.fullmatch(target_id):
++            raise TurnProtocolError("turn_invalid", "target id is invalid")
++        mode = str(routing.get("mode") or "auto")[:32]
++        reason_codes = tuple(
++            str(value)[:80]
++            for value in (routing.get("reasonCodes") or routing.get("reason_codes") or [])
++            if isinstance(value, str)
++        )[:16]
++        approval_token = routing.get("approvalToken") or routing.get("approval_token")
++        return NormalizedTurnIntent(
++            client_turn_id=turn_id,
++            target_id=target_id,
++            mode=mode,
++            reason_codes=reason_codes,
++            approval_token=str(approval_token) if approval_token else None,
++        )
++
++    def prepare(
++        self,
++        raw: Any,
++        *,
++        profile: str,
++        lineage: str,
++        prompt_digest: str,
++        current_provider: str | None,
++    ) -> PreparedTurn:
++        intent = self.normalize(raw)
++        approved = bool(
++            intent.target_id
++            and self.approval_tokens
++            and self.approval_tokens.verify(
++                intent.approval_token,
++                profile=profile,
++                lineage=lineage,
++                turn_id=intent.client_turn_id,
++                target_id=intent.target_id,
++            )
++        )
++        target = None
++        if intent.target_id:
++            try:
++                target = self.catalog.resolve(intent.target_id, current_provider=current_provider, approved=approved)
++            except CatalogError as error:
++                raise TurnProtocolError(error.code, str(error)) from error
++        envelope_hash = self.ledger.envelope_hash(intent.hash_payload(prompt_digest))
++        ledger_result = self.ledger.reserve(
++            profile=profile,
++            lineage=lineage,
++            turn_id=intent.client_turn_id,
++            envelope_hash=envelope_hash,
++        )
++        if ledger_result.outcome == "conflict":
++            raise TurnProtocolError("turn_conflict", "client turn id was reused with different content or routing")
++        return PreparedTurn(intent, target, ledger_result, envelope_hash, profile, lineage)
++
++    @staticmethod
++    def _lease(prepared: PreparedTurn) -> str:
++        if not prepared.ledger.lease_id:
++            raise TurnProtocolError("turn_lease_lost", "turn reservation has no active lease")
++        return prepared.ledger.lease_id
++
++    def accept(self, prepared: PreparedTurn) -> bool:
++        return self.ledger.accept(
++            profile=prepared.profile,
++            lineage=prepared.lineage,
++            turn_id=prepared.intent.client_turn_id,
++            lease_id=self._lease(prepared),
++            envelope_hash=prepared.envelope_hash,
++        )
++
++    def complete(self, prepared: PreparedTurn) -> bool:
++        return self.ledger.complete(
++            profile=prepared.profile,
++            lineage=prepared.lineage,
++            turn_id=prepared.intent.client_turn_id,
++            lease_id=self._lease(prepared),
++            envelope_hash=prepared.envelope_hash,
++        )
++
++    def release(self, prepared: PreparedTurn) -> bool:
++        return self.ledger.release(
++            profile=prepared.profile,
++            lineage=prepared.lineage,
++            turn_id=prepared.intent.client_turn_id,
++            lease_id=self._lease(prepared),
++            envelope_hash=prepared.envelope_hash,
++        )
+diff --git a/tui_gateway/turn_router/runtime.py b/tui_gateway/turn_router/runtime.py
+new file mode 100644
+index 0000000000..63e9603160
+--- /dev/null
++++ b/tui_gateway/turn_router/runtime.py
+@@ -0,0 +1,107 @@
++from __future__ import annotations
++
++import hashlib
++import os
++import threading
++from pathlib import Path
++
++from .catalog import ApprovalTokenManager, CatalogError, TargetCatalog
++from .ledger import TurnLedger
++from .protocol import PreparedTurn, TurnCoordinator
++
++
++class GatewayRouterRuntime:
++    """Profile-scoped catalog, approval, and ledger lifetime for Hermes Gateway."""
++
++    def __init__(self, hermes_home: str | Path):
++        self.home = Path(hermes_home).resolve()
++        self.catalog_path = self.home / "turn-router" / "targets.json"
++        if not self.catalog_path.is_file():
++            raise CatalogError("catalog_missing", "routing target catalog is not installed")
++        self.catalog = TargetCatalog.load(self.catalog_path)
++        self.ledger = TurnLedger(self.home / "state.db")
++        self.approvals = ApprovalTokenManager(self._approval_secret())
++        self.coordinator = TurnCoordinator(
++            catalog=self.catalog,
++            ledger=self.ledger,
++            approval_tokens=self.approvals,
++        )
++        normalized_home = os.path.normcase(os.path.normpath(str(self.home)))
++        self.profile_scope = hashlib.sha256(normalized_home.encode("utf-8")).hexdigest()[:24]
++
++    def _approval_secret(self) -> bytes:
++        key_path = self.home / "turn-router" / "approval.key"
++        key_path.parent.mkdir(parents=True, exist_ok=True)
++        try:
++            descriptor = os.open(key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
++        except FileExistsError:
++            secret = key_path.read_bytes()
++        else:
++            secret = os.urandom(32)
++            with os.fdopen(descriptor, "wb") as stream:
++                stream.write(secret)
++            try:
++                key_path.chmod(0o600)
++            except OSError:
++                pass
++        if len(secret) < 32:
++            raise ValueError("Hermes Turn Router approval key is invalid")
++        return secret
++
++    @staticmethod
++    def lineage(session: dict, fallback_session_id: str = "") -> str:
++        return str(
++            session.get("_lineage_root_id")
++            or session.get("stored_session_id")
++            or session.get("session_key")
++            or fallback_session_id
++        )
++
++    def capabilities(self) -> dict:
++        return self.catalog.capabilities()
++
++    def prepare(
++        self,
++        raw: dict,
++        *,
++        session: dict,
++        prompt_digest: str,
++        current_provider: str | None,
++        fallback_session_id: str = "",
++    ) -> PreparedTurn:
++        return self.coordinator.prepare(
++            raw,
++            profile=self.profile_scope,
++            lineage=self.lineage(session, fallback_session_id),
++            prompt_digest=prompt_digest,
++            current_provider=current_provider,
++        )
++
++    def accept(self, prepared: PreparedTurn, *, session: dict, fallback_session_id: str = "") -> bool:
++        del session, fallback_session_id
++        return self.coordinator.accept(prepared)
++
++    def complete(self, prepared: PreparedTurn, *, session: dict, fallback_session_id: str = "") -> bool:
++        del session, fallback_session_id
++        return self.coordinator.complete(prepared)
++
++    def release(self, prepared: PreparedTurn, *, session: dict, fallback_session_id: str = "") -> bool:
++        del session, fallback_session_id
++        return self.coordinator.release(prepared)
++
++
++_runtime_lock = threading.RLock()
++_runtimes: dict[str, tuple[int, GatewayRouterRuntime]] = {}
++
++
++def runtime_for_home(hermes_home: str | Path) -> GatewayRouterRuntime:
++    home = str(Path(hermes_home).resolve())
++    catalog = Path(home) / "turn-router" / "targets.json"
++    mtime = catalog.stat().st_mtime_ns
++    with _runtime_lock:
++        cached = _runtimes.get(home)
++        if cached and cached[0] == mtime:
++            return cached[1]
++        runtime = GatewayRouterRuntime(home)
++        _runtimes[home] = (mtime, runtime)
++        return runtime

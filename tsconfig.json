@@ -11,5 +11,6 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts", "integrations/**/*.ts"]
+  "include": ["src/**/*.ts", "tests/**/*.ts", "integrations/**/*.ts"],
+  "exclude": ["integrations/hermes/desktop/plugin-entry.ts"]
 }

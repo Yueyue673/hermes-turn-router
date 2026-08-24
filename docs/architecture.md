@@ -1,43 +1,72 @@
 # Architecture
 
 ```text
-user turn
-   │
-   ▼
-local feature extraction ── explicit mode / one-shot / safety
-   │
-   ▼
-score → raw tier → safety floor
-   │
-   ▼
-cache-aware hysteresis + session affinity
-   │
-   ▼
-immutable RouteDecision
-   │
-   ▼
-Hermes turn envelope (same RPC as prompt)
-   │
-   ▼
-validate → dedupe → transient switch → model call → restore
+Desktop composer
+  ├─ local policy → target id + reason codes
+  ├─ stable clientTurnId
+  └─ one-shot snapshot
+           │
+           ▼ same prompt.submit RPC
+Gateway protocol
+  ├─ capability/version check
+  ├─ profile target catalog
+  ├─ provider / model / reasoning / cost authorization
+  ├─ prompt digest
+  └─ SQLite reserve(profile, lineage, turn id, envelope hash)
+           │
+           ▼
+reserved → accepted → completed
+           │
+           ├─ queue/retry keeps the same envelope
+           ├─ transient model switch
+           ├─ model call and tools
+           └─ runtime restore in finally
 ```
 
-## Boundaries
+## Policy core
 
-The core package is a pure, synchronous policy engine. It does not know about React, Hermes RPC, OAuth, account plans, or API keys. Provider/model names are data.
+The TypeScript policy engine is synchronous. Inputs are the current message, mode, model state, context size, attachment presence, and allowed target IDs. Output is a `RouteDecision`.
 
-The Hermes adapter owns transport only. It must preserve turn identity and atomicity, but it must not classify text or persist a model selection.
+The core has no React, Hermes RPC, credential, network, or filesystem dependency. Provider and model names live in policy data.
 
-Account entitlements belong in a preset resolver outside the core. A provider-specific plan such as ChatGPT Plus/Pro must never become a universal tier concept.
+## Desktop plugin
 
-## Why rules first
+The compiled external plugin contributes a composer control and middleware. It requests `router.capabilities`, intersects the local policy with Gateway target IDs, and attaches a `routingIntent` to the existing turn envelope.
 
-Rules are cheap, inspectable, private, deterministic, and easy to replay. A learned classifier can be added later for ambiguous low-risk samples, but must be optional and measured against the no-classifier baseline.
+The one-shot controller keeps its selection armed while a submit is pending. `notifyTurnAccepted(clientTurnId)` consumes the matching snapshot after a successful Gateway response. Rejected submits leave it armed.
 
-## Non-goals for 0.1
+## Gateway target catalog
 
-- predicting exact provider billing from message text;
-- silently changing fallback chains;
-- storing conversation text for training;
-- random exploration on high-impact actions;
-- claiming that a model tier is universally “better.”
+Each Hermes profile owns `<hermes-home>/turn-router/targets.json`. The client sends a target ID. Gateway resolves provider, model, reasoning effort, cost class, cross-provider policy, and optional approval requirements from this file.
+
+Capability responses expose target labels and policy metadata. Provider/model values remain server-side.
+
+## Durable turn ledger
+
+`turn_router_ledger` is stored in the profile `state.db`. Its primary key is:
+
+```text
+profile scope + session lineage + client turn id
+```
+
+The envelope hash includes routing metadata and a server-computed prompt digest. The digest covers text and attachment file facts; prompt text is not stored in the ledger.
+
+States:
+
+- `reserved` — pre-accept work may still fail and release the row
+- `accepted` — the message crossed a durable acceptance boundary
+- `completed` — the turn reached a terminal success, error, or interrupt path
+
+Accepted and completed rows reject retries after Gateway restart. Reusing a turn ID with different content or routing returns `turn_conflict`.
+
+## Approval tokens
+
+Targets may require approval. Tokens use HMAC-SHA256 and bind profile, lineage, turn ID, target ID, and expiry. The maximum token lifetime is ten minutes. Catalog installation can pre-authorize a target by leaving `requires_approval` disabled.
+
+## Installation boundary
+
+The Hermes bridge is commit-pinned. The installer checks the exact Hermes commit, patch checksum, clean worktree, and `git apply --check` before writing. It backs up source files, profile plugin/catalog files, and optionally `app.asar`; rollback restores each layer.
+
+## Privacy
+
+Routing and replay run locally. The ledger stores hashes and state metadata. Replay observations contain numeric usage, latency, verification, and re-answer fields. Prompt and tool content stay outside aggregate reports.

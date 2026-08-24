@@ -1,6 +1,15 @@
 import { routeMessage } from './router.js'
 import type { RouteInput, RouterMode, RouterPolicy, RouterState } from './types.js'
 
+export interface ReplayObservation {
+  inputTokens?: number
+  cachedInputTokens?: number
+  outputTokens?: number
+  latencyMs?: number
+  verificationPassed?: boolean
+  reanswered?: boolean
+}
+
 export interface ReplayEvent {
   text: string
   mode?: RouterMode
@@ -11,6 +20,7 @@ export interface ReplayEvent {
   allowedTargetIds?: string[]
   state?: RouterState
   expectedTierId?: string
+  observed?: ReplayObservation
 }
 
 export interface ReplaySummary {
@@ -27,6 +37,14 @@ export interface ReplaySummary {
   byCacheRisk: Record<string, number>
   byReason: Record<string, number>
   errorMessages: Record<string, number>
+  observedEvents: number
+  inputTokens: number
+  cachedInputTokens: number
+  outputTokens: number
+  cacheReadRatio: number | null
+  averageLatencyMs: number | null
+  verificationFailures: number
+  reanswers: number
 }
 
 function increment(record: Record<string, number>, key: string): void {
@@ -47,8 +65,18 @@ export function replayPolicy(policy: RouterPolicy, events: ReplayEvent[]): Repla
     byTarget: {},
     byCacheRisk: {},
     byReason: {},
-    errorMessages: {}
+    errorMessages: {},
+    observedEvents: 0,
+    inputTokens: 0,
+    cachedInputTokens: 0,
+    outputTokens: 0,
+    cacheReadRatio: null,
+    averageLatencyMs: null,
+    verificationFailures: 0,
+    reanswers: 0
   }
+  let latencySamples = 0
+  let latencyTotal = 0
 
   for (const event of events) {
     try {
@@ -79,6 +107,18 @@ export function replayPolicy(policy: RouterPolicy, events: ReplayEvent[]): Repla
         summary.expectationChecks += 1
         if (event.expectedTierId === decision.target.id) summary.expectationMatches += 1
       }
+      if (event.observed) {
+        summary.observedEvents += 1
+        summary.inputTokens += Math.max(0, event.observed.inputTokens ?? 0)
+        summary.cachedInputTokens += Math.max(0, event.observed.cachedInputTokens ?? 0)
+        summary.outputTokens += Math.max(0, event.observed.outputTokens ?? 0)
+        if (event.observed.latencyMs !== undefined && event.observed.latencyMs >= 0) {
+          latencySamples += 1
+          latencyTotal += event.observed.latencyMs
+        }
+        if (event.observed.verificationPassed === false) summary.verificationFailures += 1
+        if (event.observed.reanswered === true) summary.reanswers += 1
+      }
     } catch (error) {
       summary.errors += 1
       increment(summary.errorMessages, error instanceof Error ? error.message : String(error))
@@ -89,5 +129,7 @@ export function replayPolicy(policy: RouterPolicy, events: ReplayEvent[]): Repla
   summary.expectationAccuracy = summary.expectationChecks === 0
     ? null
     : summary.expectationMatches / summary.expectationChecks
+  summary.cacheReadRatio = summary.inputTokens === 0 ? null : summary.cachedInputTokens / summary.inputTokens
+  summary.averageLatencyMs = latencySamples === 0 ? null : latencyTotal / latencySamples
   return summary
 }

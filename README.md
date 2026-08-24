@@ -158,7 +158,7 @@ The current integration contract and test matrix are documented in:
 - [`integrations/hermes/README.md`](integrations/hermes/README.md)
 - [`docs/hermes-integration.md`](docs/hermes-integration.md)
 
-Hermes does not currently expose this bridge as a stable public Desktop plugin capability. The repository tracks the required capability negotiation, target authorization, and durable turn ledger work in its roadmap.
+Hermes commit `2584b7c4ec` is supported through the versioned integration patch and installer. The installer checks the commit and patch checksum, creates a ZIP backup, runs Gateway tests, and can build/deploy the Windows unpacked Desktop release.
 
 ## Token and cache behavior
 
@@ -178,7 +178,7 @@ Routing changes should include a behavior test or an anonymized replay fixture. 
 
 ## Project status
 
-Version `0.1.0` includes the policy engine, CLI, replay evaluator, schema, reference policy, and Hermes integration contract. Work toward the next release covers Gateway target authorization, durable turn idempotency, capability negotiation, and versioned installation.
+Version `0.2.0` adds Gateway-authorized targets, capability negotiation, a durable SQLite turn ledger, accepted one-shot semantics, observed usage metrics, a compiled Desktop plugin, and versioned install/rollback tooling for Hermes commit `2584b7c4ec`.
 
 See [CHANGELOG.md](CHANGELOG.md) and [docs/roadmap.md](docs/roadmap.md).
 

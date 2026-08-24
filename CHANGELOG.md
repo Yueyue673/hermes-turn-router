@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0 - 2026-08-24
+
+- Added the `composer.turn-target.v1` capability handshake and server-side target catalog.
+- Replaced client provider/model overrides with Gateway-authorized target IDs.
+- Added a durable SQLite ledger scoped by profile, session lineage, and client turn ID.
+- Added prompt-digest conflict detection, reserved/accepted/completed states, expiry, and restart-safe duplicate handling.
+- Added HMAC approval tokens bound to profile, lineage, turn, target, and expiry.
+- Changed one-shot routing to consume only after Gateway acceptance.
+- Added observed token, cache, latency, verification, and re-answer metrics to replay summaries.
+- Added a compiled external Desktop plugin and profile-scoped target catalog.
+- Added a commit-pinned installer with checksum preflight, ZIP backup, verification, optional Desktop asar deployment, and rollback.
+- Added Python Gateway/integration tests and expanded CI to Python 3.11.
+
 ## 0.1.0 - 2026-08-24
 
 - Extracted a provider-agnostic routing core from a working Hermes Desktop implementation.

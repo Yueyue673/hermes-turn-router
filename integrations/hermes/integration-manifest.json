@@ -1,0 +1,11 @@
+{
+  "integration_version": 1,
+  "capability": "composer.turn-target.v1",
+  "supported_hermes_commits": [
+    "2584b7c4eca82ada05f16eba08936d157b483329"
+  ],
+  "patch": "patches/hermes-2584b7c4ec-turn-target-v1.patch",
+  "patch_sha256": "736cd77c2aa3832efff2f238f6b77e22c1c81a667e322f60b71d17dc6322bdd1",
+  "plugin": "desktop/plugin.js",
+  "catalog_template": "targets.example.json"
+}
