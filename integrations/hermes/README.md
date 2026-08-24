@@ -97,7 +97,7 @@ Expected protocol:
 composer.turn-target.v1
 ```
 
-The plugin stops routed sends when capability negotiation fails. `off` mode leaves normal Hermes model selection unchanged.
+If Desktop reports the socket as `open` before the live Gateway RPC object is attached, the plugin retries negotiation. If negotiation still fails at send time, the Router is bypassed visibly and the message continues with the current Hermes model. A Router failure never cancels the user's message.
 
 ## Verification
 

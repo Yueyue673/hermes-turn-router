@@ -16,7 +16,7 @@ import { jsx, jsxs } from 'react/jsx-runtime'
 import { OneShotController } from '../../../src/one-shot.js'
 import { codexLunaSolPolicy } from '../../../src/presets.js'
 import { routeMessage } from '../../../src/router.js'
-import { validateHermesCapabilities } from '../../../src/capabilities.js'
+import { requestHermesCapabilities } from '../../../src/capabilities.js'
 
 const PLUGIN_ID = 'hermes-turn-router'
 const MODES = ['auto', 'save', 'quality', 'fixed', 'off']
@@ -26,19 +26,34 @@ const $oneShotArmed = atom(false)
 const $availableTargets = atom([])
 const $status = atom('Checking Gateway capability…')
 const oneShot = new OneShotController()
+let capabilityRefresh: Promise<boolean> | null = null
 
-async function refreshCapabilities() {
+async function refreshCapabilities(attempts = 12): Promise<boolean> {
+  if (capabilityRefresh) return capabilityRefresh
+  const task = (async () => {
+    try {
+      const response = await requestHermesCapabilities(
+        () => host.request('router.capabilities', {}),
+        { attempts, delayMs: 150 }
+      )
+      $availableTargets.set(
+        response.targets
+          .filter(target => target.enabled && !target.requires_approval)
+          .map(target => target.id)
+      )
+      $status.set(`${response.targets.length} targets available`)
+      return true
+    } catch (error) {
+      $availableTargets.set([])
+      $status.set(error instanceof Error ? error.message : String(error))
+      return false
+    }
+  })()
+  capabilityRefresh = task
   try {
-    const response = validateHermesCapabilities(await host.request('router.capabilities', {}))
-    $availableTargets.set(
-      response.targets
-        .filter(target => target.enabled && !target.requires_approval)
-        .map(target => target.id)
-    )
-    $status.set(`${response.targets.length} targets available`)
-  } catch (error) {
-    $availableTargets.set([])
-    $status.set(error instanceof Error ? error.message : String(error))
+    return await task
+  } finally {
+    if (capabilityRefresh === task) capabilityRefresh = null
   }
 }
 
@@ -141,15 +156,19 @@ const plugin = {
         area: COMPOSER_AREAS.middleware,
         order: 10,
         data: {
-          handler(draft) {
+          async handler(draft) {
             const mode = $mode.get()
             if (mode === 'off') return draft
             const snapshot = oneShot.snapshot(draft.turnEnvelope.clientTurnId)
-            const availableTargetIds = $availableTargets.get()
+            let availableTargetIds = $availableTargets.get()
+            if (!availableTargetIds.length) {
+              await refreshCapabilities(4)
+              availableTargetIds = $availableTargets.get()
+            }
             if (!availableTargetIds.length) {
               oneShot.rejected(draft.turnEnvelope.clientTurnId)
-              host.notify({ kind: 'error', message: $status.get() })
-              return null
+              host.notify({ kind: 'warning', message: `Router bypassed: ${$status.get()}` })
+              return draft
             }
             const decision = routeMessage({
               text: draft.text,

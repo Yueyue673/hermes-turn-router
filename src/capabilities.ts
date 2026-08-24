@@ -16,6 +16,12 @@ export interface HermesRoutingCapabilities {
   targets: PublicRoutingTarget[]
 }
 
+export interface CapabilityRetryOptions {
+  attempts?: number
+  delayMs?: number
+  sleep?: (milliseconds: number) => Promise<void>
+}
+
 const TARGET_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/
 const COST_CLASSES = new Set(['free', 'low', 'standard', 'premium'])
 
@@ -50,4 +56,29 @@ export function validateHermesCapabilities(value: unknown): HermesRoutingCapabil
     ids.add(target.id)
   }
   return data as HermesRoutingCapabilities
+}
+
+const defaultSleep = (milliseconds: number): Promise<void> =>
+  new Promise(resolve => setTimeout(resolve, milliseconds))
+
+/** Retry the brief Desktop startup race between socket state and live RPC. */
+export async function requestHermesCapabilities(
+  request: () => Promise<unknown>,
+  options: CapabilityRetryOptions = {}
+): Promise<HermesRoutingCapabilities> {
+  const attempts = Math.max(1, Math.min(50, options.attempts ?? 12))
+  const delayMs = Math.max(0, Math.min(5_000, options.delayMs ?? 150))
+  const sleep = options.sleep ?? defaultSleep
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return validateHermesCapabilities(await request())
+    } catch (error) {
+      lastError = error
+      if (attempt < attempts) await sleep(delayMs)
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError))
 }

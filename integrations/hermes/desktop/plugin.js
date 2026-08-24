@@ -312,6 +312,22 @@ function validateHermesCapabilities(value) {
   }
   return data;
 }
+var defaultSleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+async function requestHermesCapabilities(request, options = {}) {
+  const attempts = Math.max(1, Math.min(50, options.attempts ?? 12));
+  const delayMs = Math.max(0, Math.min(5e3, options.delayMs ?? 150));
+  const sleep = options.sleep ?? defaultSleep;
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return validateHermesCapabilities(await request());
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) await sleep(delayMs);
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+}
 
 // integrations/hermes/desktop/plugin-entry.ts
 var PLUGIN_ID = "hermes-turn-router";
@@ -322,16 +338,31 @@ var $oneShotArmed = atom(false);
 var $availableTargets = atom([]);
 var $status = atom("Checking Gateway capability\u2026");
 var oneShot = new OneShotController();
-async function refreshCapabilities() {
+var capabilityRefresh = null;
+async function refreshCapabilities(attempts = 12) {
+  if (capabilityRefresh) return capabilityRefresh;
+  const task = (async () => {
+    try {
+      const response = await requestHermesCapabilities(
+        () => host.request("router.capabilities", {}),
+        { attempts, delayMs: 150 }
+      );
+      $availableTargets.set(
+        response.targets.filter((target) => target.enabled && !target.requires_approval).map((target) => target.id)
+      );
+      $status.set(`${response.targets.length} targets available`);
+      return true;
+    } catch (error) {
+      $availableTargets.set([]);
+      $status.set(error instanceof Error ? error.message : String(error));
+      return false;
+    }
+  })();
+  capabilityRefresh = task;
   try {
-    const response = validateHermesCapabilities(await host.request("router.capabilities", {}));
-    $availableTargets.set(
-      response.targets.filter((target) => target.enabled && !target.requires_approval).map((target) => target.id)
-    );
-    $status.set(`${response.targets.length} targets available`);
-  } catch (error) {
-    $availableTargets.set([]);
-    $status.set(error instanceof Error ? error.message : String(error));
+    return await task;
+  } finally {
+    if (capabilityRefresh === task) capabilityRefresh = null;
   }
 }
 function setMode(mode) {
@@ -428,15 +459,19 @@ var plugin = {
         area: COMPOSER_AREAS.middleware,
         order: 10,
         data: {
-          handler(draft) {
+          async handler(draft) {
             const mode = $mode.get();
             if (mode === "off") return draft;
             const snapshot = oneShot.snapshot(draft.turnEnvelope.clientTurnId);
-            const availableTargetIds = $availableTargets.get();
+            let availableTargetIds = $availableTargets.get();
+            if (!availableTargetIds.length) {
+              await refreshCapabilities(4);
+              availableTargetIds = $availableTargets.get();
+            }
             if (!availableTargetIds.length) {
               oneShot.rejected(draft.turnEnvelope.clientTurnId);
-              host.notify({ kind: "error", message: $status.get() });
-              return null;
+              host.notify({ kind: "warning", message: `Router bypassed: ${$status.get()}` });
+              return draft;
             }
             const decision = routeMessage({
               text: draft.text,

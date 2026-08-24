@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.2 - 2026-08-24
+
+- Retried the Desktop startup race where socket state was `open` before the live Gateway RPC object was attached.
+- Refreshed routing capabilities again at send time when the initial target list is empty.
+- Changed capability failure from cancelling the composer submission to a visible Router bypass, so messages always remain sendable.
+- Added bounded-retry tests for transient and exhausted Gateway capability requests.
+
 ## 0.2.1 - 2026-08-24
 
 - Kept busy queued turns in `reserved` state until execution starts, allowing crash recovery after TTL.

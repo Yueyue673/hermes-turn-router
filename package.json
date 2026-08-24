@@ -1,6 +1,6 @@
 {
   "name": "hermes-turn-router",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A cache-aware, per-turn model router for Hermes Agent",
   "repository": {
     "type": "git",
