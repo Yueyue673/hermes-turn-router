@@ -1,5 +1,7 @@
 # Architecture
 
+![Hermes Turn Router trust boundaries](../assets/architecture.svg)
+
 ```text
 Desktop composer
   ├─ local policy → target id + reason codes
@@ -18,7 +20,9 @@ Gateway protocol
 reserved → accepted → completed
            │
            ├─ queue/retry keeps the same envelope
-           ├─ transient model switch
+           ├─ exact target: no-op
+           ├─ effort-only target: snapshot effort, no client rebuild
+           ├─ different model: transient model switch
            ├─ model call and tools
            └─ runtime restore in finally
 ```
@@ -33,7 +37,11 @@ The core has no React, Hermes RPC, credential, network, or filesystem dependency
 
 The compiled external plugin contributes a composer control and middleware. It requests `router.capabilities`, intersects the local policy with Gateway target IDs, and attaches a `routingIntent` to the existing turn envelope.
 
-The one-shot controller keeps its selection armed while a submit is pending. `notifyTurnAccepted(clientTurnId)` consumes the matching snapshot after a successful Gateway response. Rejected submits leave it armed.
+The one-shot controller keeps its selection armed while a submit is pending. Direct accepted responses and the Gateway `turn.accepted` event consume the matching snapshot. Rejected or merely queued submits leave it armed.
+
+Capability negotiation uses bounded retry because Desktop socket state can become `open` immediately before the live RPC object is attached. If negotiation still fails at send time, middleware returns the original draft and reports `Router bypassed`; Router failure never cancels the message.
+
+Desktop passes provider, model, and live reasoning effort into the policy. Gateway publishes transient `session.info` after applying a target, so waiting UI names the model actually serving the turn, then publishes restored state after completion.
 
 ## Gateway target catalog
 

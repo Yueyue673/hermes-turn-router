@@ -1,14 +1,15 @@
-import { mkdir, readdir } from 'node:fs/promises'
-import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import sharp from 'sharp'
 
-const source = fileURLToPath(new URL('../assets/variants/', import.meta.url))
-const output = fileURLToPath(new URL('../assets/rendered/', import.meta.url))
-await mkdir(output, { recursive: true })
-for (const name of await readdir(source)) {
-  if (!name.endsWith('.svg')) continue
-  const target = name.replace(/\.svg$/, '.png')
-  await sharp(join(source, name)).resize(1280, 640).png().toFile(join(output, target))
-  console.log(target)
+const asset = name => fileURLToPath(new URL(`../assets/${name}`, import.meta.url))
+
+await sharp(asset('social-preview.svg'))
+  .resize(1280, 640)
+  .png({ compressionLevel: 9 })
+  .toFile(asset('social-preview.png'))
+
+for (const name of ['hero.svg', 'architecture.svg', 'decision-demo.svg', 'social-preview.svg']) {
+  await sharp(asset(name)).metadata()
+  console.log(`validated ${name}`)
 }
+console.log('rendered social-preview.png')

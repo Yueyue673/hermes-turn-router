@@ -1,6 +1,6 @@
 {
   "name": "hermes-turn-router",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A cache-aware, per-turn model router for Hermes Agent",
   "repository": {
     "type": "git",
@@ -37,15 +37,17 @@
     "test:cli": "node scripts/smoke-cli.mjs",
     "test:plugin": "node scripts/smoke-plugin.mjs",
     "test:integration": "python -m unittest discover -s integrations/hermes/tests -p test_*.py",
+    "test:docs": "node scripts/verify-docs.mjs",
     "render:assets": "node scripts/render-assets.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "check": "npm run typecheck && npm test && npm run test:integration && npm run build && npm run test:plugin && npm run test:cli"
+    "check": "npm run typecheck && npm test && npm run test:integration && npm run build && npm run test:plugin && npm run test:cli && npm run test:docs"
   },
   "keywords": [
     "hermes-agent",
     "llm",
     "model-routing",
-    "semantic-router",
+    "llm-router",
+    "cache-aware",
     "token-optimization"
   ],
   "license": "MIT",

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.1 - 2026-08-24
+
+- Rebuilt the README around a verified policy-engine path and a version-pinned Hermes installation path.
+- Added a unified visual system with new Hero, trust-boundary architecture, real incident replay, and 1280×640 social preview assets.
+- Added getting-started, compatibility, and troubleshooting guides.
+- Added automated Markdown link, SVG parse, social-preview dimension, release-version, and target-ladder checks to CI.
+- Updated repository description and topics to match the cache-stable, durable-ledger scope.
+- Re-verified clean Hermes install/rollback and standalone tarball validate/replay flows.
+
 ## 0.3.0 - 2026-08-24
 
 - Added a four-tier Codex policy: Luna Medium, Sol Medium, Sol High, and Sol XHigh.

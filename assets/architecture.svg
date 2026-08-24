@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760" role="img" aria-labelledby="title desc">
+<title id="title">Hermes Turn Router architecture</title>
+<desc id="desc">Desktop local policy submits a target ID to a server-authorized Gateway with a durable SQLite ledger</desc>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0l10 5-10 5z" fill="#171717"/></marker>
+  <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0l10 5-10 5z" fill="#ff4d00"/></marker>
+</defs>
+<rect width="1400" height="760" fill="#f4f1ea"/>
+<g font-family="Inter,Arial,sans-serif" fill="#171717">
+  <line x1="50" y1="42" x2="1350" y2="42" stroke="#171717" stroke-width="2"/>
+  <text x="50" y="76" font-size="15" font-weight="700">ARCHITECTURE / TRUST BOUNDARIES</text>
+  <text x="1350" y="76" text-anchor="end" font-size="15" font-weight="700">COMPOSER.TURN-TARGET.V1</text>
+
+  <rect x="50" y="112" width="390" height="470" fill="none" stroke="#171717" stroke-width="1.5" stroke-dasharray="8 6"/>
+  <rect x="475" y="112" width="600" height="470" fill="none" stroke="#171717" stroke-width="1.5" stroke-dasharray="8 6"/>
+  <rect x="1110" y="112" width="240" height="470" fill="none" stroke="#171717" stroke-width="1.5" stroke-dasharray="8 6"/>
+  <text x="68" y="142" font-size="12" font-weight="700">DESKTOP / UNTRUSTED INTENT</text>
+  <text x="493" y="142" font-size="12" font-weight="700">GATEWAY / AUTHORITY</text>
+  <text x="1128" y="142" font-size="12" font-weight="700">MODEL RUNTIME</text>
+
+  <line x1="230" y1="248" x2="230" y2="314" stroke="#171717" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="230" y1="396" x2="545" y2="396" stroke="#ff4d00" stroke-width="3" marker-end="url(#arrow-orange)"/>
+  <line x1="705" y1="248" x2="705" y2="315" stroke="#171717" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="705" y1="396" x2="705" y2="472" stroke="#171717" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="865" y1="513" x2="1168" y2="513" stroke="#171717" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="1230" y1="479" x2="1230" y2="274" stroke="#171717" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <g transform="translate(90 176)">
+    <rect width="280" height="72" fill="#ebe7de" stroke="#171717" stroke-width="1.5"/>
+    <text x="18" y="28" font-size="12" font-weight="700">01 / COMPOSER</text>
+    <text x="18" y="54" font-size="20" font-weight="800">MESSAGE + CONTEXT</text>
+  </g>
+  <g transform="translate(90 315)">
+    <rect width="280" height="82" fill="#ff4d00" stroke="#171717" stroke-width="1.5"/>
+    <text x="18" y="29" font-size="12" font-weight="700" fill="#fff">02 / LOCAL POLICY</text>
+    <text x="18" y="57" font-size="20" font-weight="800" fill="#fff">TARGET ID ONLY</text>
+  </g>
+  <text x="90" y="436" font-size="12">No provider/model strings</text>
+  <text x="90" y="458" font-size="12">No cloud classifier request</text>
+
+  <g transform="translate(545 176)">
+    <rect width="320" height="72" fill="#ebe7de" stroke="#171717" stroke-width="1.5"/>
+    <text x="18" y="28" font-size="12" font-weight="700">03 / CAPABILITY</text>
+    <text x="18" y="54" font-size="20" font-weight="800">ALLOWLIST + COST CEILING</text>
+  </g>
+  <g transform="translate(545 315)">
+    <rect width="320" height="82" fill="#171717" stroke="#171717" stroke-width="1.5"/>
+    <text x="18" y="29" font-size="12" font-weight="700" fill="#fff">04 / AUTHORIZATION</text>
+    <text x="18" y="57" font-size="20" font-weight="800" fill="#fff">RESOLVE TARGET</text>
+  </g>
+  <g transform="translate(545 472)">
+    <rect width="320" height="82" fill="#0e7c66" stroke="#171717" stroke-width="1.5"/>
+    <text x="18" y="29" font-size="12" font-weight="700" fill="#fff">05 / SQLITE LEDGER</text>
+    <text x="18" y="57" font-size="20" font-weight="800" fill="#fff">RESERVED → ACCEPTED</text>
+  </g>
+  <g transform="translate(890 315)">
+    <rect width="150" height="239" fill="#ebe7de" stroke="#171717" stroke-width="1.5"/>
+    <text x="16" y="29" font-size="12" font-weight="700">TURN LEASE</text>
+    <line x1="16" y1="48" x2="134" y2="48" stroke="#171717"/>
+    <text x="16" y="78" font-size="12">profile</text>
+    <text x="16" y="104" font-size="12">lineage</text>
+    <text x="16" y="130" font-size="12">clientTurnId</text>
+    <text x="16" y="156" font-size="12">prompt digest</text>
+    <text x="16" y="182" font-size="12">random lease</text>
+    <text x="16" y="214" font-size="11" font-weight="700">RESTART SAFE</text>
+  </g>
+
+  <g transform="translate(1168 206)">
+    <rect width="124" height="68" fill="#ebe7de" stroke="#171717" stroke-width="1.5"/>
+    <text x="62" y="29" text-anchor="middle" font-size="12" font-weight="700">RESTORE</text>
+    <text x="62" y="51" text-anchor="middle" font-size="13">base runtime</text>
+  </g>
+  <g transform="translate(1168 479)">
+    <rect width="124" height="68" fill="#ff4d00" stroke="#171717" stroke-width="1.5"/>
+    <text x="62" y="29" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">EXECUTE</text>
+    <text x="62" y="51" text-anchor="middle" font-size="13" fill="#fff">one turn</text>
+  </g>
+
+  <line x1="50" y1="622" x2="1350" y2="622" stroke="#171717" stroke-width="2"/>
+  <text x="50" y="660" font-size="12" font-weight="700">INVARIANTS</text>
+  <text x="170" y="660" font-size="13">PROMPT TEXT NOT STORED</text>
+  <text x="430" y="660" font-size="13">CLIENT OVERRIDES REJECTED</text>
+  <text x="735" y="660" font-size="13">ONE-SHOT CONSUMES ON ACCEPT</text>
+  <text x="1080" y="660" font-size="13">ROUTER FAILS OPEN</text>
+  <line x1="50" y1="704" x2="1350" y2="704" stroke="#171717"/>
+  <text x="50" y="732" font-size="11">Desktop chooses intent. Gateway decides authority. Ledger decides whether a turn may run.</text>
+</g>
+</svg>

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+<title id="title">Hermes Turn Router</title>
+<desc id="desc">Use the right model without losing the cache</desc>
+<rect width="1280" height="640" fill="#f4f1ea"/>
+<g font-family="Inter,Arial,sans-serif" fill="#171717">
+  <line x1="52" y1="42" x2="1228" y2="42" stroke="#171717" stroke-width="2"/>
+  <text x="52" y="78" font-size="15" font-weight="700">HERMES / OPEN SOURCE ROUTING</text>
+  <text x="1228" y="78" text-anchor="end" font-size="15" font-weight="700">CACHE-STABLE</text>
+
+  <text x="52" y="190" font-size="76" font-weight="800" letter-spacing="-4">TURN ROUTER</text>
+  <text x="52" y="263" font-size="46" font-weight="800" letter-spacing="-2">USE THE RIGHT MODEL.</text>
+  <text x="52" y="316" font-size="46" font-weight="800" letter-spacing="-2">KEEP THE CACHE.</text>
+
+  <rect x="54" y="363" width="16" height="16" fill="#ff4d00"/>
+  <text x="84" y="378" font-size="17" font-weight="700">PER-TURN · SERVER-AUTHORIZED · RETRY-SAFE</text>
+
+  <g transform="translate(777 142)">
+    <rect width="438" height="310" fill="#ebe7de" stroke="#171717" stroke-width="2"/>
+    <text x="20" y="35" font-size="12" font-weight="700">TARGET LADDER</text>
+    <line x1="20" y1="51" x2="418" y2="51" stroke="#171717"/>
+    <text x="22" y="92" font-size="14" font-weight="700">FAST</text><text x="416" y="92" text-anchor="end" font-size="19" font-weight="800">LUNA · MEDIUM</text>
+    <text x="22" y="141" font-size="14" font-weight="700">BALANCED</text><text x="416" y="141" text-anchor="end" font-size="19" font-weight="800">SOL · MEDIUM</text>
+    <rect x="0" y="166" width="438" height="62" fill="#0e7c66"/>
+    <text x="22" y="204" font-size="14" font-weight="700" fill="#fff">STRONG</text><text x="416" y="204" text-anchor="end" font-size="19" font-weight="800" fill="#fff">SOL · HIGH</text>
+    <rect x="0" y="228" width="438" height="62" fill="#ff4d00"/>
+    <text x="22" y="266" font-size="14" font-weight="700" fill="#fff">PREMIUM</text><text x="416" y="266" text-anchor="end" font-size="19" font-weight="800" fill="#fff">SOL · XHIGH</text>
+  </g>
+
+  <line x1="52" y1="558" x2="1228" y2="558" stroke="#171717" stroke-width="2"/>
+  <text x="52" y="594" font-size="14">LOCAL DECISION</text>
+  <text x="234" y="594" font-size="14">DURABLE LEDGER</text>
+  <text x="432" y="594" font-size="14">FAIL-OPEN SENDS</text>
+  <text x="1228" y="594" text-anchor="end" font-size="14">MIT / YUEYUE673</text>
+</g>
+</svg>
