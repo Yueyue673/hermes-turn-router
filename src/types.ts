@@ -35,6 +35,8 @@ export interface RouterPolicy {
   switchDownMargin: number
   contextTokenStep: number
   maxContextPenalty: number
+  /** Auto mode will not downgrade an established session above this size. */
+  largeContextStickyTokens?: number
 }
 
 export interface RouterState {

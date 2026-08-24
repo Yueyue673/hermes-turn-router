@@ -14,7 +14,7 @@ Hermes Agent 的逐消息模型路由器。本地策略会读取当前消息、�
 
 - 本地路由，不调用分类模型
 - 自定义 provider、model、reasoning effort 和分数门槛
-- `auto`、`save`、`quality`、`fixed` 和 one-shot 模式
+- Desktop 提供 `auto`、`save`、`quality`、`off` 和 one-shot；CLI 保留 fixed target
 - 长会话缓存滞回
 - 高影响操作安全下限
 - 服务端提供的 target allowlist
@@ -46,14 +46,14 @@ node dist/cli.js validate --policy presets/codex-luna-sol.json
 {
   "ok": true,
   "version": 1,
-  "targets": ["fast", "balanced", "premium"]
+  "targets": ["fast", "balanced", "strong", "premium"]
 }
 ```
 
 ### 查看一条消息的路由结果
 
 ```bash
-node dist/cli.js route   --text "请认真检查这个生产迁移方案"   --allow fast,balanced,premium   --context-tokens 24000   --current-provider openai-codex   --current-model gpt-5.6-luna   --current-reasoning medium
+node dist/cli.js route   --text "请认真检查这个生产迁移方案"   --allow fast,balanced,strong,premium   --context-tokens 24000   --current-provider openai-codex   --current-model gpt-5.6-luna   --current-reasoning medium
 ```
 
 ```json
@@ -99,7 +99,7 @@ const decision = routeMessage({
   text: '认真检查这个迁移方案',
   mode: 'auto',
   policy: codexLunaSolPolicy,
-  allowedTargetIds: ['fast', 'balanced', 'premium'],
+  allowedTargetIds: ['fast', 'balanced', 'strong', 'premium'],
   estimatedContextTokens: 24_000,
   state: {
     currentProvider: 'openai-codex',
@@ -115,7 +115,7 @@ const decision = routeMessage({
 
 策略文件包含一组有序 target 和若干加权信号。路由器先计算原始 target，再应用安全下限和切换成本。
 
-`auto` 模式会根据上下文规模增加升降档门槛。`save`、`quality`、`fixed` 和 one-shot 按各自配置直接执行。
+`auto` 下，已建立且超过 32K context tokens 的会话不会自动降到其他 target：保住当前模型的 prompt cache，通常比把巨大前缀搬到弱模型更快也更省。明确选择的 `save`、`quality`、CLI `fixed` 和 one-shot 仍直接执行。
 
 参考策略位于 [`presets/codex-luna-sol.json`](presets/codex-luna-sol.json)。同一结构可以配置其他云端 provider、本地模型或混合模型池。
 
@@ -139,8 +139,8 @@ const decision = routeMessage({
 | `auto` | 综合消息信号、安全规则、当前 target 和切换成本。 |
 | `save` | 增加低成本倾向，并保留安全下限。 |
 | `quality` | 增加高能力 target 的倾向。 |
-| `fixed` | 新 turn 使用指定的允许 target。 |
-| `off` | 模型选择交给 Hermes。 |
+| `fixed` | 仅 CLI/库：每个 turn 使用指定 target。 |
+| `off` | Desktop 的固定模型工作流：模型选择交给 Hermes 原生选择器。 |
 | one-shot | 下一条成功接受的 turn 使用指定 target。 |
 
 ## Hermes 集成
@@ -178,7 +178,7 @@ npm pack --dry-run
 
 ## 项目状态
 
-`0.2.2` 新增 Gateway 服务端 target 授权、带启动竞态恢复的能力协商、SQLite 持久 turn ledger、busy queue 崩溃恢复、accepted 后消费 one-shot、真实 usage 汇总、编译后的 Desktop 插件，以及面向 Hermes commit `2584b7c4ec` 的版本化安装与回滚。
+`0.3.0` 新增四档路由、长上下文缓存粘滞、no-op/effort-only 执行、真实服务模型显示、Gateway target 授权、SQLite 持久 ledger，以及面向 Hermes commit `2584b7c4ec` 的版本化安装与回滚。
 
 版本记录见 [CHANGELOG.md](CHANGELOG.md)，计划见 [docs/roadmap.md](docs/roadmap.md)。
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0 - 2026-08-24
+
+- Added a four-tier Codex policy: Luna Medium, Sol Medium, Sol High, and Sol XHigh.
+- Added hard auto-mode affinity for established conversations above 32K context tokens.
+- Passed the live Desktop reasoning effort into routing so hysteresis can identify the active target.
+- Removed the redundant Desktop `fixed` mode; `off` plus Hermes' native model picker is the fixed-model workflow.
+- Made explicit `save` and `quality` choices bypass auto-mode hysteresis.
+- Avoided provider-client rebuilds for identical targets and effort-only changes.
+- Published transient `session.info` so Desktop waiting copy names the model actually serving the turn.
+- Added target/reason visibility to the Router control and server-side decision logs.
+
 ## 0.2.2 - 2026-08-24
 
 - Retried the Desktop startup race where socket state was `open` before the live Gateway RPC object was attached.

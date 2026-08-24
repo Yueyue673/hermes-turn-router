@@ -53,7 +53,7 @@ class TargetSpec:
         }
 
     def override_dict(self) -> dict[str, str]:
-        result = {"provider": self.provider, "model": self.model}
+        result = {"target_id": self.id, "provider": self.provider, "model": self.model}
         if self.reasoning_effort:
             result["reasoning_effort"] = self.reasoning_effort
         return result

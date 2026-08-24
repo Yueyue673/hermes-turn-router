@@ -67,7 +67,7 @@ Rollback restores every patched source file, the previous plugin and catalog, an
 
 The Gateway reads `<hermes-home>/turn-router/targets.json`. Client requests contain a target ID; provider, model, reasoning effort, cost class, cross-provider policy, and approval requirements stay server-side.
 
-The default catalog contains `fast`, `balanced`, and `premium`. Edit it before restart to match the models available to the profile.
+The default catalog contains `fast`, `balanced`, `strong`, and `premium`. Edit it before restart to match the models available to the profile.
 
 ## Protocol
 

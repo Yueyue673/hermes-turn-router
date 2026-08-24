@@ -45,7 +45,7 @@ class ProtocolTests(unittest.TestCase):
         prepared = self.coordinator.prepare(
             self.intent(), profile="default", lineage="session", prompt_digest=self.digest("hello"), current_provider="p"
         )
-        self.assertEqual(prepared.target.override_dict(), {"provider": "p", "model": "m1"})
+        self.assertEqual(prepared.target.override_dict(), {"target_id": "fast", "provider": "p", "model": "m1"})
         self.assertEqual(prepared.ledger.outcome, "reserved")
         self.assertTrue(self.coordinator.accept(prepared))
         duplicate = self.coordinator.prepare(

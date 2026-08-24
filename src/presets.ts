@@ -5,7 +5,8 @@ export const codexLunaSolPolicy: RouterPolicy = {
   tiers: [
     { id: 'fast', label: 'Luna · Medium', provider: 'openai-codex', model: 'gpt-5.6-luna', reasoningEffort: 'medium', minScore: -100 },
     { id: 'balanced', label: 'Sol · Medium', provider: 'openai-codex', model: 'gpt-5.6-sol', reasoningEffort: 'medium', minScore: 25 },
-    { id: 'premium', label: 'Sol · XHigh', provider: 'openai-codex', model: 'gpt-5.6-sol', reasoningEffort: 'xhigh', minScore: 75 }
+    { id: 'strong', label: 'Sol · High', provider: 'openai-codex', model: 'gpt-5.6-sol', reasoningEffort: 'high', minScore: 60 },
+    { id: 'premium', label: 'Sol · XHigh', provider: 'openai-codex', model: 'gpt-5.6-sol', reasoningEffort: 'xhigh', minScore: 90 }
   ],
   signals: [
     {
@@ -57,5 +58,6 @@ export const codexLunaSolPolicy: RouterPolicy = {
   switchUpMargin: 10,
   switchDownMargin: 12,
   contextTokenStep: 4_000,
-  maxContextPenalty: 20
+  maxContextPenalty: 20,
+  largeContextStickyTokens: 32_000
 }

@@ -185,6 +185,11 @@ export function routeMessage(input: RouteInput): RouteDecision | null {
   }
 
   if (reasons.length === 0) reasons.push('balanced_default')
+  // Save and quality are explicit user choices. Hysteresis protects auto mode;
+  // it must not silently override a mode the user deliberately selected.
+  if (input.mode !== 'auto') {
+    return finish(raw, score, raw.id, reasons)
+  }
   if (!current || forceUpgrade || sameTarget(current, raw)) {
     return finish(raw, score, raw.id, reasons)
   }
@@ -193,6 +198,16 @@ export function routeMessage(input: RouteInput): RouteDecision | null {
   const rawIndex = tierIndex(policy, raw.id)
   let target = raw
   let hysteresisApplied = false
+
+  if (
+    rawIndex < currentIndex
+    && estimatedTokens >= (policy.largeContextStickyTokens ?? Number.POSITIVE_INFINITY)
+  ) {
+    target = current
+    hysteresisApplied = true
+    reasons.push('large_context_sticky')
+    return finish(target, score, raw.id, reasons, hysteresisApplied)
+  }
 
   if (rawIndex > currentIndex) {
     const required = raw.minScore + policy.switchUpMargin + penalty

@@ -19,12 +19,15 @@ import { routeMessage } from '../../../src/router.js'
 import { requestHermesCapabilities } from '../../../src/capabilities.js'
 
 const PLUGIN_ID = 'hermes-turn-router'
-const MODES = ['auto', 'save', 'quality', 'fixed', 'off']
+// `off` + Hermes' native model picker already provides a true fixed-model
+// workflow. A second "fixed" mode without its own target picker was duplicate
+// UI and silently forced `balanced`, so the Desktop surface no longer offers it.
+const MODES = ['auto', 'save', 'quality', 'off']
 const $mode = atom('auto')
-const $fixedTarget = atom('balanced')
 const $oneShotArmed = atom(false)
 const $availableTargets = atom([])
 const $status = atom('Checking Gateway capability…')
+const $lastTarget = atom('')
 const oneShot = new OneShotController()
 let capabilityRefresh: Promise<boolean> | null = null
 
@@ -65,6 +68,7 @@ function RouterControls() {
   const mode = useValue($mode)
   const oneShotArmed = useValue($oneShotArmed)
   const status = useValue($status)
+  const lastTarget = useValue($lastTarget)
   const gateway = useValue(host.state.gateway)
   return jsxs('div', {
     className: 'flex items-center gap-1',
@@ -81,7 +85,11 @@ function RouterControls() {
                 size: 'xs',
                 type: 'button',
                 variant: 'ghost',
-                children: [jsx(icons.Brain, {}), `Router · ${mode}`, jsx(icons.ChevronDown, {})]
+                children: [
+                  jsx(icons.Brain, {}),
+                  `Router · ${mode}${lastTarget ? ` → ${lastTarget}` : ''}`,
+                  jsx(icons.ChevronDown, {})
+                ]
               })
             }),
             jsx(DropdownMenuContent, {
@@ -121,12 +129,10 @@ const plugin = {
   description: 'Per-turn model routing with cache-aware policies and Gateway-authorized targets.',
   defaultEnabled: true,
   register(ctx) {
-    const stored = ctx.storage.get('settings', { fixedTarget: 'balanced', mode: 'auto' })
+    const stored = ctx.storage.get('settings', { mode: 'auto' })
     $mode.set(MODES.includes(stored.mode) ? stored.mode : 'auto')
-    $fixedTarget.set(typeof stored.fixedTarget === 'string' ? stored.fixedTarget : 'balanced')
-    const save = () => ctx.storage.set('settings', { fixedTarget: $fixedTarget.get(), mode: $mode.get() })
+    const save = () => ctx.storage.set('settings', { mode: $mode.get() })
     ctx.onDispose($mode.listen(save))
-    ctx.onDispose($fixedTarget.listen(save))
     const acceptedHook = (HermesSdk as unknown as {
       onTurnAccepted?: (listener: (clientTurnId: string) => void) => () => void
     }).onTurnAccepted
@@ -167,24 +173,30 @@ const plugin = {
             }
             if (!availableTargetIds.length) {
               oneShot.rejected(draft.turnEnvelope.clientTurnId)
+              $lastTarget.set('bypass')
               host.notify({ kind: 'warning', message: `Router bypassed: ${$status.get()}` })
               return draft
             }
+            const reasoningState = (host.state as unknown as {
+              reasoningEffort?: { get?: () => string }
+            }).reasoningEffort
             const decision = routeMessage({
               text: draft.text,
               mode,
               policy: codexLunaSolPolicy,
               allowedTargetIds: availableTargetIds,
-              ...(mode === 'fixed' ? { fixedTierId: $fixedTarget.get() } : {}),
               ...(snapshot ? { oneShotTierId: snapshot.targetId } : {}),
               hasAttachments: Boolean(draft.attachments?.length),
               estimatedContextTokens: host.state.focusedUsage.get()?.context_used ?? 0,
               state: {
                 currentModel: host.state.model.get(),
-                currentProvider: host.state.provider.get()
+                currentProvider: host.state.provider.get(),
+                currentReasoningEffort: reasoningState?.get?.()
               }
             })
             if (!decision) return draft
+            $lastTarget.set(decision.target.label)
+            $status.set(`${decision.target.label} · ${decision.reasons.join(', ')}`)
             return {
               ...draft,
               turnEnvelope: {

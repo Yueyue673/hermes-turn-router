@@ -42,6 +42,33 @@ describe('routeMessage', () => {
     expect(decision?.cacheRisk).toBe('none')
   })
 
+  it('keeps a large established Sol High session on its cached target', () => {
+    const decision = routeMessage({
+      ...base,
+      text: '介绍一下这些模式分别是什么意思',
+      estimatedContextTokens: 360_000,
+      state: {
+        currentProvider: 'openai-codex',
+        currentModel: 'gpt-5.6-sol',
+        currentReasoningEffort: 'high'
+      }
+    })
+    expect(decision?.rawTierId).toBe('fast')
+    expect(decision?.target.id).toBe('strong')
+    expect(decision?.reasons).toContain('large_context_sticky')
+    expect(decision?.switched).toBe(false)
+  })
+
+  it('applies explicit save and quality modes without auto hysteresis', () => {
+    const current = {
+      currentProvider: 'openai-codex',
+      currentModel: 'gpt-5.6-sol',
+      currentReasoningEffort: 'high'
+    }
+    expect(routeMessage({ ...base, mode: 'save', text: '普通问题', state: current })?.target.id).toBe('fast')
+    expect(routeMessage({ ...base, mode: 'quality', text: '普通问题', state: current })?.target.id).toBe('balanced')
+  })
+
   it('never lets save mode push a high-impact action below the safety floor', () => {
     const decision = routeMessage({ ...base, mode: 'save', text: '省额度，然后迁移生产数据库并部署' })
     expect(['balanced', 'premium']).toContain(decision?.target.id)

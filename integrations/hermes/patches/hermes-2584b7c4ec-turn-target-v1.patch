@@ -552,27 +552,30 @@ index 0000000000..17e43d936b
 +  })
 +})
 diff --git a/apps/desktop/src/sdk/index.ts b/apps/desktop/src/sdk/index.ts
-index 34d78a645b..77d01525cc 100644
+index 34d78a645b..352b34e663 100644
 --- a/apps/desktop/src/sdk/index.ts
 +++ b/apps/desktop/src/sdk/index.ts
-@@ -62,6 +62,7 @@ import {
+@@ -62,6 +62,8 @@ import {
    $connection,
    $currentCwd,
    $currentModel,
 +  $currentProvider,
++  $currentReasoningEffort,
    $gatewayState,
    $messages,
    $selectedStoredSessionId,
-@@ -421,6 +422,8 @@ export const host = {
+@@ -421,6 +423,10 @@ export const host = {
      gateway: readonlyAtom<string>($gatewayState),
      /** Current main model slug. */
      model: readonlyAtom<string>($currentModel),
 +    /** Current main provider slug. */
 +    provider: readonlyAtom<string>($currentProvider),
++    /** Current effective reasoning level mirrored by the composer/session. */
++    reasoningEffort: readonlyAtom<string>($currentReasoningEffort),
      /** Profile the live gateway is routed to. */
      profile: readonlyAtom<string>($activeGatewayProfile),
      /** Window geometry ({ width, height, narrow }). */
-@@ -882,6 +885,7 @@ export {
+@@ -882,6 +888,7 @@ export {
    type ComposerAttachmentProvider,
    type ComposerMiddleware
  } from '@/app/chat/composer/contrib'
@@ -633,10 +636,10 @@ index d53edca1d3..502c6ae3f1 100644
    })
 diff --git a/tests/tui_gateway/test_turn_router_mature.py b/tests/tui_gateway/test_turn_router_mature.py
 new file mode 100644
-index 0000000000..700d663300
+index 0000000000..bdf246a54b
 --- /dev/null
 +++ b/tests/tui_gateway/test_turn_router_mature.py
-@@ -0,0 +1,113 @@
+@@ -0,0 +1,157 @@
 +import json
 +from pathlib import Path
 +
@@ -694,7 +697,7 @@ index 0000000000..700d663300
 +        "routingIntent": {"targetId": "premium", "mode": "quality", "reasonCodes": ["quality_mode"]},
 +    })
 +    assert server._claim_client_turn(live, envelope, "hello", "ui-1") is True
-+    assert envelope["model_override"] == {"provider": "p", "model": "m2", "reasoning_effort": "high"}
++    assert envelope["model_override"] == {"target_id": "premium", "provider": "p", "model": "m2", "reasoning_effort": "high"}
 +    server._accept_client_turn(live, envelope, "ui-1")
 +    row = server._turn_router_runtime(live).ledger.get(
 +        profile=server._turn_router_runtime(live).profile_scope,
@@ -750,6 +753,50 @@ index 0000000000..700d663300
 +
 +def test_router_capability_method_is_registered():
 +    assert "router.capabilities" in server._methods
++
++
++class FakeAgent:
++    def __init__(self, effort="high"):
++        self.model = "gpt-5.6-sol"
++        self.provider = "openai-codex"
++        self.reasoning_config = {"enabled": True, "effort": effort}
++        self.api_key = ""
++        self.base_url = "https://example.invalid"
++        self.api_mode = ""
++        self._primary_runtime = None
++        self.switches = 0
++
++    def switch_model(self, **_kwargs):
++        self.switches += 1
++
++
++def test_exact_active_turn_target_does_not_rebuild_client(monkeypatch):
++    agent = FakeAgent("high")
++    monkeypatch.setattr(server, "_emit", lambda *_args, **_kwargs: None)
++    restore = server._apply_turn_model_override("ui", {"agent": agent}, {
++        "target_id": "strong",
++        "provider": "openai-codex",
++        "model": "gpt-5.6-sol",
++        "reasoning_effort": "high",
++    })
++    assert restore is None
++    assert agent.switches == 0
++
++
++def test_effort_only_turn_target_avoids_model_switch_and_restores(monkeypatch):
++    agent = FakeAgent("high")
++    monkeypatch.setattr(server, "_emit", lambda *_args, **_kwargs: None)
++    monkeypatch.setattr(server, "_session_info", lambda *_args, **_kwargs: {})
++    restore = server._apply_turn_model_override("ui", {"agent": agent}, {
++        "target_id": "premium",
++        "provider": "openai-codex",
++        "model": "gpt-5.6-sol",
++        "reasoning_effort": "xhigh",
++    })
++    assert agent.switches == 0
++    assert agent.reasoning_config["effort"] == "xhigh"
++    server._restore_agent_model_runtime(agent, restore)
++    assert agent.reasoning_config["effort"] == "high"
 diff --git a/tui_gateway/compute_host.py b/tui_gateway/compute_host.py
 index 2cb60cf203..11f7df5cf6 100644
 --- a/tui_gateway/compute_host.py
@@ -1005,7 +1052,7 @@ index 564271ea13..784e28fdc3 100644
              "cwd": resolved_cwd,
              "inflight_turn": None,
 diff --git a/tui_gateway/server.py b/tui_gateway/server.py
-index ff08824ea3..24cd3d74f3 100644
+index ff08824ea3..0f2b383f78 100644
 --- a/tui_gateway/server.py
 +++ b/tui_gateway/server.py
 @@ -9,6 +9,7 @@ import json
@@ -1296,7 +1343,82 @@ index ff08824ea3..24cd3d74f3 100644
          if one_turn:
              session["one_turn_model_restore"] = restore_snapshot
          else:
-@@ -8090,6 +8259,7 @@ def _enqueue_prompt(
+@@ -5129,6 +5298,74 @@ def _apply_model_switch(
+     }
+ 
+ 
++def _apply_turn_model_override(sid: str, session: dict, override: dict) -> dict | None:
++    """Apply a server-authorized turn target without redundant client rebuilds."""
++    from hermes_constants import parse_reasoning_effort
++
++    agent = session["agent"]
++    target_model = str(override["model"])
++    target_provider = str(override["provider"])
++    target_effort = str(override.get("reasoning_effort") or "")
++    current_model = str(getattr(agent, "model", "") or "")
++    current_provider = str(getattr(agent, "provider", "") or "")
++    current_config = copy.deepcopy(getattr(agent, "reasoning_config", None))
++    target_config = parse_reasoning_effort(target_effort) if target_effort else current_config
++    same_runtime = current_model == target_model and current_provider == target_provider
++
++    if same_runtime and current_config == target_config:
++        logger.info(
++            "turn router target already active: ui_session=%s target=%s provider=%s model=%s effort=%s",
++            sid,
++            override.get("target_id") or "",
++            target_provider,
++            target_model,
++            target_effort,
++        )
++        return None
++
++    if same_runtime:
++        restore_snapshot = _snapshot_agent_model_runtime(agent)
++        agent.reasoning_config = target_config
++        switch_kind = "effort-only"
++    else:
++        from types import SimpleNamespace
++
++        parsed_switch = SimpleNamespace(
++            model_input=target_model,
++            explicit_provider=target_provider,
++            is_global=False,
++            is_session=False,
++            is_once=True,
++        )
++        _apply_model_switch(
++            sid,
++            session,
++            target_model,
++            confirm_expensive_model=True,
++            pin_session_override=False,
++            parsed_flags=parsed_switch,
++            persist_override=False,
++            transient_turn=True,
++        )
++        restore_snapshot = session.pop("one_turn_model_restore", None)
++        agent.reasoning_config = target_config
++        switch_kind = "model"
++
++    logger.info(
++        "turn router applied: ui_session=%s target=%s provider=%s model=%s effort=%s kind=%s",
++        sid,
++        override.get("target_id") or "",
++        target_provider,
++        target_model,
++        target_effort,
++        switch_kind,
++    )
++    # Publish the actual serving model while the turn is running. The settled
++    # session-info path publishes the restored base runtime in finally.
++    _emit("session.info", sid, _session_info(agent, session))
++    return restore_snapshot
++
++
+ def _sync_bot_capabilities(sid: str, session: dict) -> None:
+     """Rebuild a Bot Chat session's agent when its capability surface changed.
+ 
+@@ -8090,6 +8327,7 @@ def _enqueue_prompt(
      text: Any,
      transport: Any,
      image_paths: list[str] | None = None,
@@ -1304,7 +1426,7 @@ index ff08824ea3..24cd3d74f3 100644
  ) -> None:
      """Stash a message to run as the very next turn once the live one ends.
  
-@@ -8116,6 +8286,8 @@ def _enqueue_prompt(
+@@ -8116,6 +8354,8 @@ def _enqueue_prompt(
          if original and text.strip() == original:
              return
      queued = {"text": text, "transport": transport}
@@ -1313,7 +1435,7 @@ index ff08824ea3..24cd3d74f3 100644
      if image_paths:
          queued["image_paths"] = image_paths
      existing = session.get("queued_prompt")
-@@ -8125,6 +8297,8 @@ def _enqueue_prompt(
+@@ -8125,6 +8365,8 @@ def _enqueue_prompt(
          and isinstance(text, str)
          and not existing.get("image_paths")
          and not image_paths
@@ -1322,7 +1444,7 @@ index ff08824ea3..24cd3d74f3 100644
          and not session.get("queued_prompts")
      ):
          prev = existing["text"]
-@@ -8248,7 +8422,13 @@ def _interrupt_busy_session(sid: str, session: dict, agent: Any) -> None:
+@@ -8248,7 +8490,13 @@ def _interrupt_busy_session(sid: str, session: dict, agent: Any) -> None:
  
  
  def _handle_busy_submit(
@@ -1337,7 +1459,7 @@ index ff08824ea3..24cd3d74f3 100644
  ) -> dict | None:
      """Apply the ``display.busy_input_mode`` policy to a prompt that lands while
      a turn is in flight, instead of rejecting it with ``session busy``.
-@@ -8326,7 +8506,13 @@ def _handle_busy_submit(
+@@ -8326,7 +8574,13 @@ def _handle_busy_submit(
              if image_paths:
                  session["attached_images"] = image_paths + list(session.get("attached_images", []))
              return None
@@ -1352,7 +1474,7 @@ index ff08824ea3..24cd3d74f3 100644
          session["last_active"] = time.time()
  
      # Attachments need a separate model invocation. Queue them without
-@@ -8387,6 +8573,11 @@ def _drain_queued_prompt(rid, sid: str, session: dict) -> bool:
+@@ -8387,6 +8641,11 @@ def _drain_queued_prompt(rid, sid: str, session: dict) -> bool:
              session["running"] = False
              return True
      dispatch_failed = False
@@ -1364,7 +1486,7 @@ index ff08824ea3..24cd3d74f3 100644
      try:
          if use_compute_host:
              if queued.get("image_paths"):
-@@ -8397,10 +8588,16 @@ def _drain_queued_prompt(rid, sid: str, session: dict) -> bool:
+@@ -8397,10 +8656,16 @@ def _drain_queued_prompt(rid, sid: str, session: dict) -> bool:
                      queued["text"],
                      image_paths=queued["image_paths"],
                      queued_prompt_generation=queue_generation,
@@ -1382,7 +1504,7 @@ index ff08824ea3..24cd3d74f3 100644
                  )
              if resp.get("error"):
                  message = str(((resp.get("error") or {}).get("message")) or "queued prompt failed")
-@@ -8418,6 +8615,7 @@ def _drain_queued_prompt(rid, sid: str, session: dict) -> bool:
+@@ -8418,6 +8683,7 @@ def _drain_queued_prompt(rid, sid: str, session: dict) -> bool:
                      queued["text"],
                      image_paths=queued["image_paths"],
                      queued_prompt_generation=queue_generation,
@@ -1390,7 +1512,7 @@ index ff08824ea3..24cd3d74f3 100644
                  )
              else:
                  _run_prompt_submit(
-@@ -8426,6 +8624,7 @@ def _drain_queued_prompt(rid, sid: str, session: dict) -> bool:
+@@ -8426,6 +8692,7 @@ def _drain_queued_prompt(rid, sid: str, session: dict) -> bool:
                      session,
                      queued["text"],
                      queued_prompt_generation=queue_generation,
@@ -1398,7 +1520,7 @@ index ff08824ea3..24cd3d74f3 100644
                  )
      except Exception as exc:
          print(
-@@ -10685,6 +10884,7 @@ def _run_prompt_submit(
+@@ -10685,6 +10952,7 @@ def _run_prompt_submit(
      display_metadata: dict | None = None,
      image_paths: list[str] | None = None,
      queued_prompt_generation: int | None = None,
@@ -1406,7 +1528,7 @@ index ff08824ea3..24cd3d74f3 100644
  ) -> bool:
      with session["history_lock"]:
          if session.get("_closing"):
-@@ -10712,6 +10912,20 @@ def _run_prompt_submit(
+@@ -10712,6 +10980,20 @@ def _run_prompt_submit(
                  agent.clear_interrupt()
              except Exception:
                  pass
@@ -1427,7 +1549,7 @@ index ff08824ea3..24cd3d74f3 100644
      # Desktop/TUI observability (#86647): this is the ONE INFO record proving
      # a Desktop/TUI prompt was accepted by THIS process, and it ties together
      # every id a rotation-mute trace needs — the UI session id, the gateway
-@@ -10790,6 +11004,12 @@ def _run_prompt_submit(
+@@ -10790,6 +11072,12 @@ def _run_prompt_submit(
              # the sudo.request overlay. (secret capture is a module global, so
              # re-running is a harmless no-op.)
              _wire_callbacks(sid)
@@ -1440,43 +1562,20 @@ index ff08824ea3..24cd3d74f3 100644
              # Skip the config-model sync while a /model --once override is
              # active: the once-model is intentionally not pinned as a session
              # model_override (it must not persist), so without this guard the
-@@ -10809,6 +11029,35 @@ def _run_prompt_submit(
+@@ -10809,6 +11097,12 @@ def _run_prompt_submit(
              # the turn runs. No-op for every other session shape.
              _sync_bot_capabilities(sid, session)
              agent = session["agent"]
 +            if override:
 +                # Capability sync may replace session["agent"]. Apply the atomic
-+                # per-turn override only after every possible replacement, then
-+                # snapshot/restore that final live agent.
-+                from types import SimpleNamespace
-+
-+                parsed_switch = SimpleNamespace(
-+                    model_input=override["model"],
-+                    explicit_provider=override["provider"],
-+                    is_global=False,
-+                    is_session=False,
-+                    is_once=True,
-+                )
-+                _apply_model_switch(
-+                    sid,
-+                    session,
-+                    override["model"],
-+                    confirm_expensive_model=True,
-+                    pin_session_override=False,
-+                    parsed_flags=parsed_switch,
-+                    persist_override=False,
-+                    transient_turn=True,
-+                )
-+                one_turn_restore = session.pop("one_turn_model_restore", None)
-+                effort = override.get("reasoning_effort")
-+                if effort:
-+                    from hermes_constants import parse_reasoning_effort
-+
-+                    agent.reasoning_config = parse_reasoning_effort(effort)
++                # per-turn override only after every possible replacement. The
++                # helper avoids rebuilding the provider client when only effort
++                # changes or the exact target is already active.
++                one_turn_restore = _apply_turn_model_override(sid, session, override)
              # Snapshot after turn-start model sync. A deferred switch mutates
              # history and its version; that mutation belongs to this turn.
              with session["history_lock"]:
-@@ -11446,6 +11695,13 @@ def _run_prompt_submit(
+@@ -11446,6 +11740,13 @@ def _run_prompt_submit(
                  )
                  _emit("error", sid, {"message": str(e)})
          finally:
@@ -1515,7 +1614,7 @@ index 0000000000..97fa20c40d
 +]
 diff --git a/tui_gateway/turn_router/catalog.py b/tui_gateway/turn_router/catalog.py
 new file mode 100644
-index 0000000000..8f822f5485
+index 0000000000..b3afafa7a2
 --- /dev/null
 +++ b/tui_gateway/turn_router/catalog.py
 @@ -0,0 +1,212 @@
@@ -1574,7 +1673,7 @@ index 0000000000..8f822f5485
 +        }
 +
 +    def override_dict(self) -> dict[str, str]:
-+        result = {"provider": self.provider, "model": self.model}
++        result = {"target_id": self.id, "provider": self.provider, "model": self.model}
 +        if self.reasoning_effort:
 +            result["reasoning_effort"] = self.reasoning_effort
 +        return result

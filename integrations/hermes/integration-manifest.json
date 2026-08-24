@@ -5,7 +5,7 @@
     "2584b7c4eca82ada05f16eba08936d157b483329"
   ],
   "patch": "patches/hermes-2584b7c4ec-turn-target-v1.patch",
-  "patch_sha256": "99310125c87d8decc2edef656a1f3030cc44c4e968005b2c17cb8d9cff04cb40",
+  "patch_sha256": "cfc7950bc76b471ae011f7b75b9905c18b5e9814913c080db3ab7274f70cfa73",
   "plugin": "desktop/plugin.js",
   "catalog_template": "targets.example.json"
 }

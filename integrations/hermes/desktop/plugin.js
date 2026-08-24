@@ -62,7 +62,8 @@ var codexLunaSolPolicy = {
   tiers: [
     { id: "fast", label: "Luna \xB7 Medium", provider: "openai-codex", model: "gpt-5.6-luna", reasoningEffort: "medium", minScore: -100 },
     { id: "balanced", label: "Sol \xB7 Medium", provider: "openai-codex", model: "gpt-5.6-sol", reasoningEffort: "medium", minScore: 25 },
-    { id: "premium", label: "Sol \xB7 XHigh", provider: "openai-codex", model: "gpt-5.6-sol", reasoningEffort: "xhigh", minScore: 75 }
+    { id: "strong", label: "Sol \xB7 High", provider: "openai-codex", model: "gpt-5.6-sol", reasoningEffort: "high", minScore: 60 },
+    { id: "premium", label: "Sol \xB7 XHigh", provider: "openai-codex", model: "gpt-5.6-sol", reasoningEffort: "xhigh", minScore: 90 }
   ],
   signals: [
     {
@@ -114,7 +115,8 @@ var codexLunaSolPolicy = {
   switchUpMargin: 10,
   switchDownMargin: 12,
   contextTokenStep: 4e3,
-  maxContextPenalty: 20
+  maxContextPenalty: 20,
+  largeContextStickyTokens: 32e3
 };
 
 // src/router.ts
@@ -261,6 +263,9 @@ function routeMessage(input) {
     reasons.push("safety_floor");
   }
   if (reasons.length === 0) reasons.push("balanced_default");
+  if (input.mode !== "auto") {
+    return finish(raw, score, raw.id, reasons);
+  }
   if (!current || forceUpgrade || sameTarget(current, raw)) {
     return finish(raw, score, raw.id, reasons);
   }
@@ -268,6 +273,12 @@ function routeMessage(input) {
   const rawIndex = tierIndex(policy, raw.id);
   let target = raw;
   let hysteresisApplied = false;
+  if (rawIndex < currentIndex && estimatedTokens >= (policy.largeContextStickyTokens ?? Number.POSITIVE_INFINITY)) {
+    target = current;
+    hysteresisApplied = true;
+    reasons.push("large_context_sticky");
+    return finish(target, score, raw.id, reasons, hysteresisApplied);
+  }
   if (rawIndex > currentIndex) {
     const required = raw.minScore + policy.switchUpMargin + penalty;
     if (score < required && !safetySignal) {
@@ -331,12 +342,12 @@ async function requestHermesCapabilities(request, options = {}) {
 
 // integrations/hermes/desktop/plugin-entry.ts
 var PLUGIN_ID = "hermes-turn-router";
-var MODES = ["auto", "save", "quality", "fixed", "off"];
+var MODES = ["auto", "save", "quality", "off"];
 var $mode = atom("auto");
-var $fixedTarget = atom("balanced");
 var $oneShotArmed = atom(false);
 var $availableTargets = atom([]);
 var $status = atom("Checking Gateway capability\u2026");
+var $lastTarget = atom("");
 var oneShot = new OneShotController();
 var capabilityRefresh = null;
 async function refreshCapabilities(attempts = 12) {
@@ -372,6 +383,7 @@ function RouterControls() {
   const mode = useValue($mode);
   const oneShotArmed = useValue($oneShotArmed);
   const status = useValue($status);
+  const lastTarget = useValue($lastTarget);
   const gateway = useValue(host.state.gateway);
   return jsxs("div", {
     className: "flex items-center gap-1",
@@ -388,7 +400,11 @@ function RouterControls() {
                 size: "xs",
                 type: "button",
                 variant: "ghost",
-                children: [jsx(icons.Brain, {}), `Router \xB7 ${mode}`, jsx(icons.ChevronDown, {})]
+                children: [
+                  jsx(icons.Brain, {}),
+                  `Router \xB7 ${mode}${lastTarget ? ` \u2192 ${lastTarget}` : ""}`,
+                  jsx(icons.ChevronDown, {})
+                ]
               })
             }),
             jsx(DropdownMenuContent, {
@@ -427,12 +443,10 @@ var plugin = {
   description: "Per-turn model routing with cache-aware policies and Gateway-authorized targets.",
   defaultEnabled: true,
   register(ctx) {
-    const stored = ctx.storage.get("settings", { fixedTarget: "balanced", mode: "auto" });
+    const stored = ctx.storage.get("settings", { mode: "auto" });
     $mode.set(MODES.includes(stored.mode) ? stored.mode : "auto");
-    $fixedTarget.set(typeof stored.fixedTarget === "string" ? stored.fixedTarget : "balanced");
-    const save = () => ctx.storage.set("settings", { fixedTarget: $fixedTarget.get(), mode: $mode.get() });
+    const save = () => ctx.storage.set("settings", { mode: $mode.get() });
     ctx.onDispose($mode.listen(save));
-    ctx.onDispose($fixedTarget.listen(save));
     const acceptedHook = HermesSdk.onTurnAccepted;
     if (typeof acceptedHook === "function") {
       ctx.onDispose(acceptedHook((clientTurnId) => {
@@ -470,24 +484,28 @@ var plugin = {
             }
             if (!availableTargetIds.length) {
               oneShot.rejected(draft.turnEnvelope.clientTurnId);
+              $lastTarget.set("bypass");
               host.notify({ kind: "warning", message: `Router bypassed: ${$status.get()}` });
               return draft;
             }
+            const reasoningState = host.state.reasoningEffort;
             const decision = routeMessage({
               text: draft.text,
               mode,
               policy: codexLunaSolPolicy,
               allowedTargetIds: availableTargetIds,
-              ...mode === "fixed" ? { fixedTierId: $fixedTarget.get() } : {},
               ...snapshot ? { oneShotTierId: snapshot.targetId } : {},
               hasAttachments: Boolean(draft.attachments?.length),
               estimatedContextTokens: host.state.focusedUsage.get()?.context_used ?? 0,
               state: {
                 currentModel: host.state.model.get(),
-                currentProvider: host.state.provider.get()
+                currentProvider: host.state.provider.get(),
+                currentReasoningEffort: reasoningState?.get?.()
               }
             });
             if (!decision) return draft;
+            $lastTarget.set(decision.target.label);
+            $status.set(`${decision.target.label} \xB7 ${decision.reasons.join(", ")}`);
             return {
               ...draft,
               turnEnvelope: {

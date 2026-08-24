@@ -14,7 +14,7 @@ Per-turn model routing for Hermes Agent. Hermes Turn Router evaluates each messa
 
 - Local routing with no classifier request
 - Configurable provider, model, reasoning effort, and score thresholds
-- `auto`, `save`, `quality`, `fixed`, and one-shot routing modes
+- Desktop `auto`, `save`, `quality`, `off`, and one-shot controls; CLI fixed-target support
 - Cache-aware hysteresis for long conversations
 - Safety floors for high-impact operations
 - Server-provided target allowlists
@@ -46,14 +46,14 @@ node dist/cli.js validate --policy presets/codex-luna-sol.json
 {
   "ok": true,
   "version": 1,
-  "targets": ["fast", "balanced", "premium"]
+  "targets": ["fast", "balanced", "strong", "premium"]
 }
 ```
 
 ### Route one message
 
 ```bash
-node dist/cli.js route   --text "Review this production migration carefully"   --allow fast,balanced,premium   --context-tokens 24000   --current-provider openai-codex   --current-model gpt-5.6-luna   --current-reasoning medium
+node dist/cli.js route   --text "Review this production migration carefully"   --allow fast,balanced,strong,premium   --context-tokens 24000   --current-provider openai-codex   --current-model gpt-5.6-luna   --current-reasoning medium
 ```
 
 ```json
@@ -99,7 +99,7 @@ const decision = routeMessage({
   text: 'Review this migration carefully',
   mode: 'auto',
   policy: codexLunaSolPolicy,
-  allowedTargetIds: ['fast', 'balanced', 'premium'],
+  allowedTargetIds: ['fast', 'balanced', 'strong', 'premium'],
   estimatedContextTokens: 24_000,
   state: {
     currentProvider: 'openai-codex',
@@ -115,7 +115,7 @@ const decision = routeMessage({
 
 A policy defines an ordered set of targets and a collection of weighted signals. The router computes a raw target, applies the configured safety floor, then evaluates the cost of moving away from the current target.
 
-Longer contexts add a larger switching margin in `auto` mode. Explicit `save`, `quality`, `fixed`, and one-shot selections use their configured behavior directly.
+In `auto`, established conversations above 32K context tokens do not downgrade to a different target: preserving the model-specific prompt cache is usually faster and cheaper than moving a large prefix to a weaker model. Explicit `save`, `quality`, CLI `fixed`, and one-shot selections still apply directly.
 
 The reference policy is stored in [`presets/codex-luna-sol.json`](presets/codex-luna-sol.json). The same schema supports cloud providers, local models, and mixed model pools.
 
@@ -139,8 +139,8 @@ See [`policy.schema.json`](policy.schema.json) for the full format.
 | `auto` | Applies signals, safety rules, session state, and switching cost. |
 | `save` | Adds a lower-cost bias while retaining the safety floor. |
 | `quality` | Adds a higher-capability bias. |
-| `fixed` | Uses one allowed target for each new turn. |
-| `off` | Leaves model selection to Hermes. |
+| `fixed` | CLI/library only: uses one allowed target for each turn. |
+| `off` | Desktop fixed-model workflow: leaves selection to Hermes' native model picker. |
 | one-shot | Uses one allowed target for the next accepted turn. |
 
 ## Hermes integration
@@ -178,7 +178,7 @@ Routing changes should include a behavior test or an anonymized replay fixture. 
 
 ## Project status
 
-Version `0.2.2` adds Gateway-authorized targets, capability negotiation with startup-race recovery, a durable SQLite turn ledger, crash-recoverable busy queues, accepted one-shot semantics, observed usage metrics, a compiled Desktop plugin, and versioned install/rollback tooling for Hermes commit `2584b7c4ec`.
+Version `0.3.0` adds four-tier routing, large-context cache affinity, no-op/effort-only execution, truthful live model display, Gateway-authorized targets, a durable SQLite ledger, and versioned install/rollback tooling for Hermes commit `2584b7c4ec`.
 
 See [CHANGELOG.md](CHANGELOG.md) and [docs/roadmap.md](docs/roadmap.md).
 

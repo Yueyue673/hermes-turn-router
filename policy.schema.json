@@ -20,7 +20,8 @@
     "switchUpMargin":{"type":"number","minimum":0},
     "switchDownMargin":{"type":"number","minimum":0},
     "contextTokenStep":{"type":"integer","minimum":1},
-    "maxContextPenalty":{"type":"number","minimum":0}
+    "maxContextPenalty":{"type":"number","minimum":0},
+    "largeContextStickyTokens":{"type":"integer","minimum":1}
   },
   "additionalProperties": false
 }
