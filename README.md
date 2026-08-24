@@ -1,41 +1,29 @@
-![Hermes Turn Router — per-turn, cache-aware, local model routing](assets/hero.svg)
+![Hermes Turn Router](assets/hero.svg)
 
 # Hermes Turn Router
-
-**A cache-aware, per-turn model router for Hermes Agent.**
 
 [![CI](https://github.com/Yueyue673/hermes-turn-router/actions/workflows/ci.yml/badge.svg)](https://github.com/Yueyue673/hermes-turn-router/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-111111.svg)](LICENSE)
 [![Node 20+](https://img.shields.io/badge/node-20%2B-111111.svg)](package.json)
-[![Local routing](https://img.shields.io/badge/router-local-ff4d00.svg)](docs/privacy.md)
 
-Route a greeting, a code change, and a production migration to different model targets—**without mutating the global Hermes model** and without paying for a second LLM just to classify the message.
+Per-turn model routing for Hermes Agent. Hermes Turn Router evaluates each message locally, selects an allowed model target, and keeps that decision stable across queue and retry paths.
 
-> The useful question is not “what is the cheapest model for this sentence?” It is “which target minimizes model usage, cache re-reads, retries, correction time, and failure risk?”
+[中文](README.zh-CN.md) · [CLI](docs/cli.md) · [Architecture](docs/architecture.md) · [Hermes integration](integrations/hermes/README.md)
 
-[中文说明](README.zh-CN.md) · [Architecture](docs/architecture.md) · [Token economics](docs/token-economics.md) · [Privacy](docs/privacy.md)
+## Highlights
 
-## What it gives you today
+- Local routing with no classifier request
+- Configurable provider, model, reasoning effort, and score thresholds
+- `auto`, `save`, `quality`, `fixed`, and one-shot routing modes
+- Cache-aware hysteresis for long conversations
+- Safety floors for high-impact operations
+- Server-provided target allowlists
+- JSON Schema validation for policy files
+- CLI commands for validation, inspection, and fixture replay
+- Aggregate replay reports that omit prompt text
+- Immutable turn intent for Hermes queue and retry integration
 
-Hermes Turn Router is more than a policy function. The repository ships three usable layers:
-
-| Layer | Use it for | Status |
-|---|---|---|
-| **Policy engine** | Resolve an allowed target from text, mode, context size, and current model | Tested |
-| **CLI + replay evaluator** | Validate policies, inspect one decision, and measure a fixture set before deployment | Tested |
-| **Hermes integration contract** | Carry one immutable decision through queue, retry, compute-host, transient apply, and restore | Reference integration; upstream capability work required |
-
-### Practical guarantees
-
-- **No classifier tax** — local synchronous rules; no extra model call.
-- **Cache-aware hysteresis** — long conversations require a clearer benefit before switching.
-- **Safety floor** — save mode cannot push high-impact work below the configured minimum.
-- **Server-authorized targets** — the policy selects only from a verified target allowlist.
-- **Explainable output** — target, score, reason codes, raw tier, final tier, and cache risk.
-- **Provider-agnostic core** — provider/model/reasoning are policy data, not hard-coded concepts.
-- **Private by default** — replay output is aggregate-only and never echoes prompt text.
-
-## Try it in two minutes
+## Quick start
 
 ```bash
 git clone https://github.com/Yueyue673/hermes-turn-router.git
@@ -44,59 +32,65 @@ npm ci
 npm run check
 ```
 
-### 1. Validate a policy
+`npm run check` runs the TypeScript typecheck, test suite, production build, and CLI smoke tests.
+
+## CLI
+
+### Validate a policy
 
 ```bash
 node dist/cli.js validate --policy presets/codex-luna-sol.json
 ```
 
 ```json
-{"ok":true,"version":1,"targets":["fast","balanced","premium"]}
+{
+  "ok": true,
+  "version": 1,
+  "targets": ["fast", "balanced", "premium"]
+}
 ```
 
-### 2. Inspect one real routing decision
+### Route one message
 
 ```bash
-node dist/cli.js route   --text "Please carefully review this production migration architecture"   --allow fast,balanced,premium   --context-tokens 24000   --current-provider openai-codex   --current-model gpt-5.6-luna   --current-reasoning medium
+node dist/cli.js route   --text "Review this production migration carefully"   --allow fast,balanced,premium   --context-tokens 24000   --current-provider openai-codex   --current-model gpt-5.6-luna   --current-reasoning medium
 ```
-
-The result includes the selected target and the cost of changing course:
 
 ```json
 {
-  "target": {"id":"premium","model":"gpt-5.6-sol","reasoningEffort":"xhigh"},
-  "reasons": ["explicit_quality","high_impact","complex_reasoning"],
+  "target": {
+    "id": "premium",
+    "provider": "openai-codex",
+    "model": "gpt-5.6-sol",
+    "reasoningEffort": "xhigh"
+  },
+  "reasons": ["explicit_quality", "high_impact", "complex_reasoning"],
   "switched": true,
   "contextPenalty": 6,
   "cacheRisk": "medium"
 }
 ```
 
-### 3. Replay a fixture set before changing production policy
+### Replay a fixture set
 
 ```bash
 node dist/cli.js replay --input examples/replay.ndjson
 ```
 
-The bundled fixture currently returns **6/6 expected decisions, one actual model switch, and zero errors**. Replay reports target distribution, switch rate, cache-risk buckets, reason-code counts, and expectation accuracy—without printing the original messages.
+Replay reports:
 
-![Aggregate routing diagnostics shown as a local decision ledger](assets/decision-demo.svg)
+- target distribution
+- switch count and switch rate
+- cache-risk buckets
+- routing reason counts
+- expected-target accuracy
+- validation and routing errors
 
-## Why “simple message → cheap model” is not enough
+The bundled fixture contains six cases and currently produces six expected decisions with zero errors.
 
-Prompt caches are usually scoped to a provider/model/account. Switching a long session from A to B can force B to read the full history without A's cache discount; switching back may repeat that cost. Higher reasoning levels can also spend more hidden reasoning tokens.
+![Routing decision ledger](assets/decision-demo.svg)
 
-Hermes Turn Router therefore applies:
-
-1. a raw semantic score;
-2. an explicit safety floor;
-3. an upgrade/downgrade margin;
-4. an additional context-size penalty;
-5. continuation affinity for bare messages such as “continue.”
-
-Explicit `quality`, `save`, `fixed`, and one-shot choices remain authoritative. Hysteresis protects `auto` mode from marginal ping-pong; it does not overrule the user. See [Token economics](docs/token-economics.md).
-
-## Library API
+## Library
 
 ```ts
 import { codexLunaSolPolicy, routeMessage } from 'hermes-turn-router'
@@ -115,66 +109,79 @@ const decision = routeMessage({
 })
 ```
 
-`routeMessage()` is pure and synchronous. It performs no network request, stores no prompt, and writes no configuration.
+`routeMessage()` is synchronous and has no network or filesystem side effects.
 
-## Model profiles, not product plans
+## Routing model
 
-The bundled `presets/codex-luna-sol.json` is a reference profile tested against our current Hermes setup. The core does **not** model ChatGPT Plus/Pro as universal routing concepts. A target is simply an ID with a provider, model, optional reasoning effort, and score threshold.
+A policy defines an ordered set of targets and a collection of weighted signals. The router computes a raw target, applies the configured safety floor, then evaluates the cost of moving away from the current target.
 
-Create another profile for Anthropic, Gemini, DeepSeek, OpenRouter, LM Studio, or a mixed local/cloud stack. Validate it against [policy.schema.json](policy.schema.json), then replay representative fixtures before enabling it.
+Longer contexts add a larger switching margin in `auto` mode. Explicit `save`, `quality`, `fixed`, and one-shot selections use their configured behavior directly.
 
-## Routing modes
+The reference policy is stored in [`presets/codex-luna-sol.json`](presets/codex-luna-sol.json). The same schema supports cloud providers, local models, and mixed model pools.
+
+```json
+{
+  "id": "balanced",
+  "label": "Sol · Medium",
+  "provider": "openai-codex",
+  "model": "gpt-5.6-sol",
+  "reasoningEffort": "medium",
+  "minScore": 25
+}
+```
+
+See [`policy.schema.json`](policy.schema.json) for the full format.
+
+## Modes
 
 | Mode | Behavior |
 |---|---|
-| `auto` | Balance task signals, impact, current target, and switch cost. |
-| `save` | Prefer lower-cost targets while preserving the safety floor. |
-| `quality` | Bias toward higher-capability allowed targets. |
-| `fixed` | Bind new turns to one allowed target. |
-| `off` | True bypass; retain normal Hermes behavior. |
-| one-shot | Use one allowed target for the next **accepted** turn; not a persistent mode. |
+| `auto` | Applies signals, safety rules, session state, and switching cost. |
+| `save` | Adds a lower-cost bias while retaining the safety floor. |
+| `quality` | Adds a higher-capability bias. |
+| `fixed` | Uses one allowed target for each new turn. |
+| `off` | Leaves model selection to Hermes. |
+| one-shot | Uses one allowed target for the next accepted turn. |
 
-## Hermes integration: honest status
+## Hermes integration
 
-> [!WARNING]
-> This is an experimental community project, not an official Nous Research component. The policy engine and CLI are usable now; the public Desktop integration is a reference contract, not a blind one-click installer.
+The policy engine and CLI run independently. Desktop routing additionally requires a per-turn execution bridge in Hermes:
 
-Current stable Hermes builds do not yet expose a negotiated public `composer.turn-model-override.v1` capability. A safe integration must add all of the following, not merely call `config.set` before sending:
+1. Desktop assigns a stable `clientTurnId`.
+2. The selected target is attached to the prompt submission.
+3. Gateway resolves the target through its server-side catalog.
+4. Queue and retry paths preserve the same decision.
+5. Gateway applies the target for one turn and restores the previous runtime afterward.
 
-- stable `clientTurnId` across queue and retry;
-- prompt and immutable route intent in the same RPC;
-- Gateway-side target resolution, provider/cost/reasoning allowlists, and approval policy;
-- durable deduplication scoped by profile + session lineage + turn ID;
-- transient apply/restore on success, error, and interrupt;
-- explicit capability negotiation and incompatibility errors;
-- zero persistent writes to `config.yaml` or the session model.
+The current integration contract and test matrix are documented in:
 
-See the [integration contract](integrations/hermes/README.md) and [verification matrix](docs/hermes-integration.md). We deliberately do not publish an installer that overwrites moving Hermes core files and calls that compatibility.
+- [`integrations/hermes/README.md`](integrations/hermes/README.md)
+- [`docs/hermes-integration.md`](docs/hermes-integration.md)
 
-## Project status
+Hermes does not currently expose this bridge as a stable public Desktop plugin capability. The repository tracks the required capability negotiation, target authorization, and durable turn ledger work in its roadmap.
 
-**0.1.0 proves the useful core:** configurable targets, local routing, cache-aware switching, allowlisted capabilities, CLI inspection, aggregate replay, tests, packaging, and an atomic Hermes contract.
+## Token and cache behavior
 
-Next work is operational rather than cosmetic:
+Prompt caches commonly depend on the provider, model, and account serving a request. A model switch can require the destination model to process the conversation prefix again. Hermes Turn Router includes the current context size in its switching threshold and reports cache risk on each decision.
 
-- provider capability adapters;
-- privacy-preserving usage ingestion;
-- replay reports for under-route, over-route, latency, and real token usage;
-- upstreamable Hermes capability negotiation and durable turn ledger;
-- a packaged Desktop extension only after that boundary is stable.
-
-See [Roadmap](docs/roadmap.md).
+Detailed behavior and suggested metrics are in [`docs/token-economics.md`](docs/token-economics.md).
 
 ## Development
 
 ```bash
-npm run check          # typecheck + 13 tests + build + CLI smoke tests
-npm run render:assets  # rebuild PNG previews from editable SVG sources
-npm pack --dry-run     # inspect the public package
+npm run check
+npm run render:assets
+npm pack --dry-run
 ```
 
-Routing changes should start with a failing anonymized fixture or behavior test. Do not tune thresholds from one anecdote. Read [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+Routing changes should include a behavior test or an anonymized replay fixture. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Project status
+
+Version `0.1.0` includes the policy engine, CLI, replay evaluator, schema, reference policy, and Hermes integration contract. Work toward the next release covers Gateway target authorization, durable turn idempotency, capability negotiation, and versioned installation.
+
+See [CHANGELOG.md](CHANGELOG.md) and [docs/roadmap.md](docs/roadmap.md).
 
 ## License
 
-MIT. Hermes is a project/trademark of its respective owners. This repository is community-maintained and unaffiliated with Nous Research.
+MIT. This is a community project and is not affiliated with Nous Research.
