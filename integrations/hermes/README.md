@@ -76,8 +76,8 @@ The default catalog contains `fast`, `balanced`, and `premium`. Edit it before r
 3. Gateway computes a prompt digest and reserves the turn in SQLite.
 4. Gateway resolves the target from the profile catalog.
 5. Queue and retry paths retain the same envelope.
-6. The ledger moves from `reserved` to `accepted` at the first durable acceptance boundary.
-7. The Desktop one-shot state consumes only after the submit response is accepted.
+6. Direct turns move from `reserved` to `accepted` at the durable submit boundary. Busy queued turns stay `reserved` until `_run_prompt_submit` starts them.
+7. Gateway emits `turn.accepted`; Desktop one-shot state consumes at that execution boundary.
 8. Inline turns move to `completed` in the terminal `finally` path.
 9. The previous model and reasoning runtime are restored after the turn.
 

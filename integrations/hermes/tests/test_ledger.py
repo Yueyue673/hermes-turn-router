@@ -27,6 +27,8 @@ class LedgerTests(unittest.TestCase):
         first = self.ledger.reserve(**self.scope, envelope_hash="hash-a")
         self.assertEqual(first.outcome, "reserved")
         self.assertTrue(self.ledger.accept(**self.scope, **self.lease(first)))
+        self.assertTrue(self.ledger.accept(**self.scope, **self.lease(first)))
+        self.assertTrue(self.ledger.complete(**self.scope, **self.lease(first)))
         self.assertTrue(self.ledger.complete(**self.scope, **self.lease(first)))
         restarted = TurnLedger(self.path, now=lambda: self.clock[0])
         duplicate = restarted.reserve(**self.scope, envelope_hash="hash-a")

@@ -36,7 +36,8 @@ class TurnLedger:
         connection = sqlite3.connect(self.path, timeout=5, isolation_level=None)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA busy_timeout=5000")
-        connection.execute("PRAGMA journal_mode=WAL")
+        # Reuse the journal mode chosen by Hermes (WAL or its filesystem-safe
+        # DELETE fallback). A plugin must not override the profile DB policy.
         return connection
 
     def _initialize(self) -> None:
@@ -142,7 +143,20 @@ class TurnLedger:
                 "AND lease_id=? AND envelope_hash=? AND expires_at>=?",
                 (now, now + retention_seconds, profile, lineage, turn_id, lease_id, envelope_hash, now),
             )
-            return bool(cursor.rowcount)
+            if cursor.rowcount:
+                return True
+            row = connection.execute(
+                "SELECT state, lease_id, envelope_hash, expires_at FROM turn_router_ledger "
+                "WHERE profile=? AND session_lineage=? AND client_turn_id=?",
+                (profile, lineage, turn_id),
+            ).fetchone()
+            return bool(
+                row
+                and row["state"] in ("accepted", "completed")
+                and row["lease_id"] == lease_id
+                and row["envelope_hash"] == envelope_hash
+                and int(row["expires_at"]) >= now
+            )
 
     def complete(
         self,
@@ -162,7 +176,20 @@ class TurnLedger:
                 "AND lease_id=? AND envelope_hash=? AND expires_at>=?",
                 (now, now + retention_seconds, profile, lineage, turn_id, lease_id, envelope_hash, now),
             )
-            return bool(cursor.rowcount)
+            if cursor.rowcount:
+                return True
+            row = connection.execute(
+                "SELECT state, lease_id, envelope_hash, expires_at FROM turn_router_ledger "
+                "WHERE profile=? AND session_lineage=? AND client_turn_id=?",
+                (profile, lineage, turn_id),
+            ).fetchone()
+            return bool(
+                row
+                and row["state"] == "completed"
+                and row["lease_id"] == lease_id
+                and row["envelope_hash"] == envelope_hash
+                and int(row["expires_at"]) >= now
+            )
 
     def release(
         self,

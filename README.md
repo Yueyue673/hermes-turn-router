@@ -178,7 +178,7 @@ Routing changes should include a behavior test or an anonymized replay fixture. 
 
 ## Project status
 
-Version `0.2.0` adds Gateway-authorized targets, capability negotiation, a durable SQLite turn ledger, accepted one-shot semantics, observed usage metrics, a compiled Desktop plugin, and versioned install/rollback tooling for Hermes commit `2584b7c4ec`.
+Version `0.2.1` adds Gateway-authorized targets, capability negotiation, a durable SQLite turn ledger, crash-recoverable busy queues, accepted one-shot semantics, observed usage metrics, a compiled Desktop plugin, and versioned install/rollback tooling for Hermes commit `2584b7c4ec`.
 
 See [CHANGELOG.md](CHANGELOG.md) and [docs/roadmap.md](docs/roadmap.md).
 

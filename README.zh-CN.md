@@ -178,7 +178,7 @@ npm pack --dry-run
 
 ## 项目状态
 
-`0.2.0` 新增 Gateway 服务端 target 授权、能力协商、SQLite 持久 turn ledger、accepted 后消费 one-shot、真实 usage 汇总、编译后的 Desktop 插件，以及面向 Hermes commit `2584b7c4ec` 的版本化安装与回滚。
+`0.2.1` 新增 Gateway 服务端 target 授权、能力协商、SQLite 持久 turn ledger、busy queue 崩溃恢复、accepted 后消费 one-shot、真实 usage 汇总、编译后的 Desktop 插件，以及面向 Hermes commit `2584b7c4ec` 的版本化安装与回滚。
 
 版本记录见 [CHANGELOG.md](CHANGELOG.md)，计划见 [docs/roadmap.md](docs/roadmap.md)。
 

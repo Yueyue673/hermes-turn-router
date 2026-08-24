@@ -792,7 +792,7 @@ index 314b38d904..2a34f15086 100644
  def _(rid, params: dict) -> dict:
      try:
 diff --git a/tui_gateway/methods_prompt.py b/tui_gateway/methods_prompt.py
-index fa0dcd949f..c7e68fbd42 100644
+index fa0dcd949f..10b4850ca6 100644
 --- a/tui_gateway/methods_prompt.py
 +++ b/tui_gateway/methods_prompt.py
 @@ -328,6 +328,74 @@ def _(rid, params: dict) -> dict:
@@ -870,7 +870,7 @@ index fa0dcd949f..c7e68fbd42 100644
      if has_truncation and isinstance(text, str):
          # A rewind/regenerate replays a turn from what the transcript shows. A
          # skill turn shows its invocation, so re-expand it here — otherwise
-@@ -354,11 +422,19 @@ def _(rid, params: dict) -> dict:
+@@ -354,11 +422,21 @@ def _(rid, params: dict) -> dict:
                  busy_transport = t or session.get("transport")
              else:
                  break
@@ -886,12 +886,14 @@ index fa0dcd949f..c7e68fbd42 100644
 +            if busy_response.get("error"):
 +                _release_turn_reservation()
 +            else:
-+                _consume_first_turn_binding()
-+                busy_response.setdefault("result", {})["accepted"] = True
++                # The busy queue is memory-backed. Keep the durable row reserved
++                # until the queued turn actually starts; a crash can then reclaim
++                # it after the reservation TTL instead of losing an accepted turn.
++                busy_response.setdefault("result", {})["accepted"] = False
              return busy_response
          # The old turn finished between the two lock acquisitions. Retry the
          # claim so this prompt starts normally instead of being stranded in a
-@@ -626,6 +702,11 @@ def _(rid, params: dict) -> dict:
+@@ -626,6 +704,11 @@ def _(rid, params: dict) -> dict:
                      "truncation would erase the entire session transcript; "
                      "resubmit with confirm_empty_truncate=true if this is intended",
                  )
@@ -903,7 +905,7 @@ index fa0dcd949f..c7e68fbd42 100644
              # Info for routine rewind/edit cuts; warning only when the client
              # explicitly opts into wiping the whole transcript.
              log_fn = logger.warning if not truncated else logger.info
-@@ -695,6 +776,7 @@ def _(rid, params: dict) -> dict:
+@@ -695,6 +778,7 @@ def _(rid, params: dict) -> dict:
                              exc,
                              exc_info=True,
                          )
@@ -911,7 +913,7 @@ index fa0dcd949f..c7e68fbd42 100644
                          return _err(
                              rid,
                              5008,
-@@ -718,6 +800,8 @@ def _(rid, params: dict) -> dict:
+@@ -718,6 +802,8 @@ def _(rid, params: dict) -> dict:
                      ]
              session["history"] = truncated
              session["history_version"] = int(session.get("history_version", 0)) + 1
@@ -920,7 +922,7 @@ index fa0dcd949f..c7e68fbd42 100644
          session["running"] = True
          session["_turn_cancel_requested"] = False
          session["last_active"] = time.time()
-@@ -725,9 +809,16 @@ def _(rid, params: dict) -> dict:
+@@ -725,9 +811,16 @@ def _(rid, params: dict) -> dict:
  
      if turn_isolation:
          isolated_response = _submit_prompt_to_compute_host(
@@ -938,7 +940,7 @@ index fa0dcd949f..c7e68fbd42 100644
              if survivor_user_row_ids is not None:
                  # The truncation already happened inline above (memory + DB),
                  # before compute-host dispatch — the rebind payload applies to
-@@ -757,6 +848,7 @@ def _(rid, params: dict) -> dict:
+@@ -757,6 +850,7 @@ def _(rid, params: dict) -> dict:
              session["running"] = False
              session["last_active"] = time.time()
              _clear_inflight_turn(session)
@@ -946,7 +948,7 @@ index fa0dcd949f..c7e68fbd42 100644
          if is_disk_full_error(exc):
              return _err(
                  rid,
-@@ -769,6 +861,7 @@ def _(rid, params: dict) -> dict:
+@@ -769,6 +863,7 @@ def _(rid, params: dict) -> dict:
              5071,
              f"session storage could not be written: {exc}",
          )
@@ -954,7 +956,7 @@ index fa0dcd949f..c7e68fbd42 100644
      _start_agent_build(sid, session)
  
      def run_after_agent_ready() -> None:
-@@ -812,7 +905,14 @@ def _(rid, params: dict) -> dict:
+@@ -812,7 +907,14 @@ def _(rid, params: dict) -> dict:
                      },
                  )
                  return
@@ -970,7 +972,7 @@ index fa0dcd949f..c7e68fbd42 100644
  
      run_thread = threading.Thread(target=run_after_agent_ready, daemon=True)
      # Keep a handle so session.interrupt can tell a live turn from a stuck
-@@ -823,6 +923,7 @@ def _(rid, params: dict) -> dict:
+@@ -823,6 +925,7 @@ def _(rid, params: dict) -> dict:
          rid,
          {
              "status": "streaming",
@@ -1003,7 +1005,7 @@ index 564271ea13..784e28fdc3 100644
              "cwd": resolved_cwd,
              "inflight_turn": None,
 diff --git a/tui_gateway/server.py b/tui_gateway/server.py
-index ff08824ea3..f9e5e969a0 100644
+index ff08824ea3..24cd3d74f3 100644
 --- a/tui_gateway/server.py
 +++ b/tui_gateway/server.py
 @@ -9,6 +9,7 @@ import json
@@ -1404,7 +1406,28 @@ index ff08824ea3..f9e5e969a0 100644
  ) -> bool:
      with session["history_lock"]:
          if session.get("_closing"):
-@@ -10790,6 +10990,12 @@ def _run_prompt_submit(
+@@ -10712,6 +10912,20 @@ def _run_prompt_submit(
+                 agent.clear_interrupt()
+             except Exception:
+                 pass
++    try:
++        _accept_client_turn(session, turn_envelope, sid)
++    except Exception as exc:
++        with session["history_lock"]:
++            session["running"] = False
++            session["last_active"] = time.time()
++        _emit("error", sid, {"message": f"turn acceptance failed: {exc}"})
++        return False
++    if turn_envelope:
++        _emit(
++            "turn.accepted",
++            sid,
++            {"client_turn_id": turn_envelope.get("client_turn_id")},
++        )
+     # Desktop/TUI observability (#86647): this is the ONE INFO record proving
+     # a Desktop/TUI prompt was accepted by THIS process, and it ties together
+     # every id a rotation-mute trace needs — the UI session id, the gateway
+@@ -10790,6 +11004,12 @@ def _run_prompt_submit(
              # the sudo.request overlay. (secret capture is a module global, so
              # re-running is a harmless no-op.)
              _wire_callbacks(sid)
@@ -1417,7 +1440,7 @@ index ff08824ea3..f9e5e969a0 100644
              # Skip the config-model sync while a /model --once override is
              # active: the once-model is intentionally not pinned as a session
              # model_override (it must not persist), so without this guard the
-@@ -10809,6 +11015,35 @@ def _run_prompt_submit(
+@@ -10809,6 +11029,35 @@ def _run_prompt_submit(
              # the turn runs. No-op for every other session shape.
              _sync_bot_capabilities(sid, session)
              agent = session["agent"]
@@ -1453,7 +1476,7 @@ index ff08824ea3..f9e5e969a0 100644
              # Snapshot after turn-start model sync. A deferred switch mutates
              # history and its version; that mutation belongs to this turn.
              with session["history_lock"]:
-@@ -11446,6 +11681,13 @@ def _run_prompt_submit(
+@@ -11446,6 +11695,13 @@ def _run_prompt_submit(
                  )
                  _emit("error", sid, {"message": str(e)})
          finally:
@@ -1710,10 +1733,10 @@ index 0000000000..8f822f5485
 +        return target
 diff --git a/tui_gateway/turn_router/ledger.py b/tui_gateway/turn_router/ledger.py
 new file mode 100644
-index 0000000000..103b05aa03
+index 0000000000..15b445f007
 --- /dev/null
 +++ b/tui_gateway/turn_router/ledger.py
-@@ -0,0 +1,200 @@
+@@ -0,0 +1,227 @@
 +from __future__ import annotations
 +
 +import hashlib
@@ -1752,7 +1775,8 @@ index 0000000000..103b05aa03
 +        connection = sqlite3.connect(self.path, timeout=5, isolation_level=None)
 +        connection.row_factory = sqlite3.Row
 +        connection.execute("PRAGMA busy_timeout=5000")
-+        connection.execute("PRAGMA journal_mode=WAL")
++        # Reuse the journal mode chosen by Hermes (WAL or its filesystem-safe
++        # DELETE fallback). A plugin must not override the profile DB policy.
 +        return connection
 +
 +    def _initialize(self) -> None:
@@ -1858,7 +1882,20 @@ index 0000000000..103b05aa03
 +                "AND lease_id=? AND envelope_hash=? AND expires_at>=?",
 +                (now, now + retention_seconds, profile, lineage, turn_id, lease_id, envelope_hash, now),
 +            )
-+            return bool(cursor.rowcount)
++            if cursor.rowcount:
++                return True
++            row = connection.execute(
++                "SELECT state, lease_id, envelope_hash, expires_at FROM turn_router_ledger "
++                "WHERE profile=? AND session_lineage=? AND client_turn_id=?",
++                (profile, lineage, turn_id),
++            ).fetchone()
++            return bool(
++                row
++                and row["state"] in ("accepted", "completed")
++                and row["lease_id"] == lease_id
++                and row["envelope_hash"] == envelope_hash
++                and int(row["expires_at"]) >= now
++            )
 +
 +    def complete(
 +        self,
@@ -1878,7 +1915,20 @@ index 0000000000..103b05aa03
 +                "AND lease_id=? AND envelope_hash=? AND expires_at>=?",
 +                (now, now + retention_seconds, profile, lineage, turn_id, lease_id, envelope_hash, now),
 +            )
-+            return bool(cursor.rowcount)
++            if cursor.rowcount:
++                return True
++            row = connection.execute(
++                "SELECT state, lease_id, envelope_hash, expires_at FROM turn_router_ledger "
++                "WHERE profile=? AND session_lineage=? AND client_turn_id=?",
++                (profile, lineage, turn_id),
++            ).fetchone()
++            return bool(
++                row
++                and row["state"] == "completed"
++                and row["lease_id"] == lease_id
++                and row["envelope_hash"] == envelope_hash
++                and int(row["expires_at"]) >= now
++            )
 +
 +    def release(
 +        self,

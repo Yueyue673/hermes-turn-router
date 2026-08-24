@@ -122,6 +122,12 @@ const plugin = {
     } else {
       $status.set('Restart Hermes to activate the per-turn routing SDK')
     }
+    ctx.onDispose(host.onEvent('turn.accepted', event => {
+      const payload = event.payload as { client_turn_id?: string } | undefined
+      if (payload?.client_turn_id && oneShot.accepted(payload.client_turn_id)) {
+        $oneShotArmed.set(false)
+      }
+    }))
     const onGateway = state => {
       if (state === 'open') void refreshCapabilities()
     }

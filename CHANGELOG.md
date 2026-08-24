@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1 - 2026-08-24
+
+- Kept busy queued turns in `reserved` state until execution starts, allowing crash recovery after TTL.
+- Added `turn.accepted` events so queued one-shot selections consume at the execution boundary.
+- Reused Hermes' profile SQLite journal mode instead of forcing WAL.
+- Made accepted/completed transitions idempotent for the same active lease.
+
 ## 0.2.0 - 2026-08-24
 
 - Added the `composer.turn-target.v1` capability handshake and server-side target catalog.
