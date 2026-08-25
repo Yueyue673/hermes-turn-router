@@ -1,0 +1,32 @@
+{
+  "$schema": "../target-catalog.schema.json",
+  "schema_version": 1,
+  "max_cost_class": "premium",
+  "allow_cross_provider": true,
+  "targets": [
+    {
+      "id": "fast",
+      "label": "Local fast model",
+      "provider": "local-provider",
+      "model": "local-fast-model",
+      "cost_class": "free"
+    },
+    {
+      "id": "balanced",
+      "label": "Cloud balanced model",
+      "provider": "cloud-provider-a",
+      "model": "cloud-balanced-model",
+      "reasoning_effort": "medium",
+      "cost_class": "standard"
+    },
+    {
+      "id": "strong",
+      "label": "Cloud strong model",
+      "provider": "cloud-provider-b",
+      "model": "cloud-strong-model",
+      "reasoning_effort": "high",
+      "cost_class": "premium",
+      "requires_approval": true
+    }
+  ]
+}

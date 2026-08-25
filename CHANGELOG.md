@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.4.0 - 2026-08-25
+
+### Routing and evaluation
+
+- Fixed escaped whitespace/word-boundary expressions in the compiled TypeScript preset and added a regression test that keeps the JSON and compiled presets identical.
+- Raised the attachment signal from 10 to 11 so a code message with an attachment reaches the balanced boundary.
+- Added category-level replay summaries without echoing prompt text.
+- Added a 32-event bilingual/stateful reference evaluation with generated Markdown and SVG evidence; 31 checked decisions match and the `off` event bypasses as intended.
+
+### Provider portability
+
+- Added a Gateway target-catalog JSON Schema, same-provider and mixed-provider templates, and a validator that uses the production catalog parser.
+- Added validated custom-policy embedding for Desktop plugin builds through `HERMES_TURN_ROUTER_POLICY`.
+- Changed `Best once` to choose the highest policy target allowed by Gateway instead of hard-coding `premium`.
+- Added provider-porting, compatibility, approval, and cache verification guidance.
+
+### Repository maintenance
+
+- Added a deterministic animated routing demo generated from `routeMessage()` output.
+- Added Dependabot, CodeQL, automated release tarballs/checksums, provider issue forms, and expanded contributor guidance.
+- Enabled Discussions, dependency security updates, private vulnerability reporting, branch cleanup, and provider/policy/integration labels.
+
 ## 0.3.1 - 2026-08-24
 
 - Rebuilt the README around a verified policy-engine path and a version-pinned Hermes installation path.

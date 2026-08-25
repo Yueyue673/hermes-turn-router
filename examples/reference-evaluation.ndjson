@@ -1,0 +1,32 @@
+{"id":"simple-zh-hello","category":"simple","text":"你好","mode":"auto","expectedTierId":"fast"}
+{"id":"simple-en-hello","category":"simple","text":"Hello","mode":"auto","expectedTierId":"fast"}
+{"id":"simple-zh-translate","category":"simple","text":"把这句话翻译成英文","mode":"auto","expectedTierId":"fast"}
+{"id":"simple-en-format","category":"simple","text":"Format this title in sentence case","mode":"auto","expectedTierId":"fast"}
+{"id":"code-en-debug","category":"technical","text":"Analyze the root cause of this TypeScript API error and propose a tested fix","mode":"auto","expectedTierId":"balanced"}
+{"id":"code-zh-architecture","category":"technical","text":"分析这段 Python API 代码的架构和根因","mode":"auto","expectedTierId":"balanced"}
+{"id":"technical-attachment","category":"technical","text":"检查附件里的代码和测试结果","mode":"auto","hasAttachments":true,"expectedTierId":"balanced"}
+{"id":"architecture-en","category":"reasoning","text":"Compare the architecture trade-offs and long-term automation plan","mode":"auto","expectedTierId":"balanced"}
+{"id":"architecture-zh","category":"reasoning","text":"分析这个系统设计的长期方案和权衡","mode":"auto","expectedTierId":"balanced"}
+{"id":"long-message","category":"reasoning","text":"请把这个方案从目标、约束、使用者、失败恢复、维护成本和验证标准几个方面完整整理出来。这里的重点是建立一个可以长期维护的结构，同时给出每个决策的原因，内容需要足够具体，方便后面根据真实使用反馈继续调整，而不是只提供一句笼统结论。还要说明哪些条件尚未验证，哪些部分可以立即执行，哪些部分需要更多数据。","mode":"auto","expectedTierId":"balanced"}
+{"id":"safety-zh-migration","category":"safety","text":"迁移生产数据库并准备回滚","mode":"auto","expectedTierId":"balanced"}
+{"id":"safety-en-permission","category":"safety","text":"Review the production permission change and backup plan","mode":"auto","expectedTierId":"balanced"}
+{"id":"safety-save-floor","category":"safety","text":"省额度，然后迁移生产数据库并部署","mode":"save","expectedTierId":"balanced"}
+{"id":"quality-zh-explicit","category":"quality","text":"请认真深入审查这个系统架构","mode":"auto","expectedTierId":"premium"}
+{"id":"quality-en-explicit","category":"quality","text":"Think carefully and use the best model for this final architecture review","mode":"auto","expectedTierId":"premium"}
+{"id":"quality-mode-default","category":"quality","text":"整理这份说明","mode":"quality","expectedTierId":"balanced"}
+{"id":"quality-mode-technical","category":"quality","text":"分析 TypeScript API 代码和测试","mode":"quality","expectedTierId":"balanced"}
+{"id":"save-mode-default","category":"modes","text":"整理这份说明","mode":"save","expectedTierId":"fast"}
+{"id":"save-explicit","category":"modes","text":"省额度，简短回答这个问题","mode":"auto","expectedTierId":"fast"}
+{"id":"fixed-strong","category":"modes","text":"固定使用强档","mode":"fixed","fixedTierId":"strong","expectedTierId":"strong"}
+{"id":"off-bypass","category":"modes","text":"由 Hermes 原生模型处理","mode":"off"}
+{"id":"one-shot-premium","category":"modes","text":"下一条使用最强档","mode":"auto","oneShotTierId":"premium","expectedTierId":"premium"}
+{"id":"continuation-strong-zh","category":"continuation","text":"继续","mode":"auto","state":{"currentProvider":"openai-codex","currentModel":"gpt-5.6-sol","currentReasoningEffort":"high"},"expectedTierId":"strong"}
+{"id":"continuation-balanced-en","category":"continuation","text":"continue","mode":"auto","state":{"currentProvider":"openai-codex","currentModel":"gpt-5.6-sol","currentReasoningEffort":"medium"},"expectedTierId":"balanced"}
+{"id":"cache-hold-balanced","category":"cache","text":"谢谢","mode":"auto","estimatedContextTokens":48000,"state":{"currentProvider":"openai-codex","currentModel":"gpt-5.6-sol","currentReasoningEffort":"medium"},"expectedTierId":"balanced"}
+{"id":"cache-hold-strong","category":"cache","text":"把这个标题改短一点","mode":"auto","estimatedContextTokens":360000,"state":{"currentProvider":"openai-codex","currentModel":"gpt-5.6-sol","currentReasoningEffort":"high"},"expectedTierId":"strong"}
+{"id":"cache-upshift-hold","category":"cache","text":"帮我研究这个长期自动化方案","mode":"auto","estimatedContextTokens":48000,"state":{"currentProvider":"openai-codex","currentModel":"gpt-5.6-luna","currentReasoningEffort":"medium"},"expectedTierId":"fast"}
+{"id":"cache-safety-upshift","category":"cache","text":"审查生产数据库迁移","mode":"auto","estimatedContextTokens":48000,"state":{"currentProvider":"openai-codex","currentModel":"gpt-5.6-luna","currentReasoningEffort":"medium"},"expectedTierId":"balanced"}
+{"id":"allowlist-cap-premium","category":"authorization","text":"请认真使用最强模型审查架构","mode":"auto","allowedTargetIds":["fast","balanced","strong"],"expectedTierId":"strong"}
+{"id":"allowlist-floor","category":"authorization","text":"你好","mode":"auto","allowedTargetIds":["balanced","strong"],"expectedTierId":"balanced"}
+{"id":"observed-cache","category":"observations","text":"分析 API 根因","mode":"auto","observed":{"inputTokens":12000,"cachedInputTokens":10000,"outputTokens":700,"latencyMs":8500,"verificationPassed":true},"expectedTierId":"balanced"}
+{"id":"observed-reanswer","category":"observations","text":"整理标题","mode":"auto","observed":{"inputTokens":3000,"cachedInputTokens":2000,"outputTokens":120,"latencyMs":1800,"verificationPassed":false,"reanswered":true},"expectedTierId":"fast"}

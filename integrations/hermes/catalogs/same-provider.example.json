@@ -1,0 +1,40 @@
+{
+  "$schema": "../target-catalog.schema.json",
+  "schema_version": 1,
+  "max_cost_class": "premium",
+  "allow_cross_provider": false,
+  "targets": [
+    {
+      "id": "fast",
+      "label": "Fast · low effort",
+      "provider": "your-provider",
+      "model": "your-fast-model",
+      "reasoning_effort": "low",
+      "cost_class": "low"
+    },
+    {
+      "id": "balanced",
+      "label": "Balanced · medium effort",
+      "provider": "your-provider",
+      "model": "your-balanced-model",
+      "reasoning_effort": "medium",
+      "cost_class": "standard"
+    },
+    {
+      "id": "strong",
+      "label": "Strong · high effort",
+      "provider": "your-provider",
+      "model": "your-strong-model",
+      "reasoning_effort": "high",
+      "cost_class": "premium"
+    },
+    {
+      "id": "premium",
+      "label": "Premium · maximum effort",
+      "provider": "your-provider",
+      "model": "your-premium-model",
+      "reasoning_effort": "max",
+      "cost_class": "premium"
+    }
+  ]
+}

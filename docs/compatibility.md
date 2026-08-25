@@ -14,7 +14,8 @@ Hermes Turn Router separates the portable policy engine from the version-sensiti
 | Windows unpacked Desktop deployment | Tested | Installer can build, back up, replace, and roll back `app.asar` |
 | macOS/Linux packaged Desktop deployment | Not yet verified | Source patch can be inspected; packaged deployment path is Windows-specific |
 | `openai-codex` reference catalog | Tested | `gpt-5.6-luna` and `gpt-5.6-sol` with effort tiers |
-| Other providers/models | Structurally supported | Must be declared in the server catalog and validated against the target profile |
+| Custom same-provider policy/catalog | Build path tested | Custom policy is validated and embedded at build time; each real provider/model still needs runtime evidence |
+| Cross-provider catalogs | Structurally supported | Disabled by default in the reference catalog; requires explicit server policy and per-provider verification |
 | Remote Hermes profiles | Protocol-compatible | Requires the same patched Gateway capability on the remote profile |
 
 ## Why the integration is version-pinned

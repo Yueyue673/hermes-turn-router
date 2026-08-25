@@ -1,5 +1,11 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Questions and setup help
+    url: https://github.com/Yueyue673/hermes-turn-router/discussions/categories/q-a
+    about: Ask usage, installation, and catalog questions in Discussions.
+  - name: Ideas and design proposals
+    url: https://github.com/Yueyue673/hermes-turn-router/discussions/categories/ideas
+    about: Discuss design changes before opening an implementation issue.
   - name: Security vulnerability
     url: https://github.com/Yueyue673/hermes-turn-router/security/advisories/new
     about: Report vulnerabilities privately. Do not open a public issue.

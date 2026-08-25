@@ -45,6 +45,36 @@ describe('replayPolicy', () => {
     expect(JSON.stringify(summary)).not.toContain('private fixture')
   })
 
+  it('reports expectation accuracy by public fixture category', () => {
+    const summary = replayPolicy(codexLunaSolPolicy, [
+      { id: 'simple-zh', category: 'simple', text: '你好', expectedTierId: 'fast' },
+      { id: 'safety-zh', category: 'safety', text: '迁移生产数据库', expectedTierId: 'balanced' },
+      { id: 'safety-wrong', category: 'safety', text: '删除生产备份', expectedTierId: 'premium' }
+    ])
+
+    expect(summary.byCategory).toEqual({
+      simple: {
+        events: 1,
+        routed: 1,
+        bypassed: 0,
+        errors: 0,
+        expectationChecks: 1,
+        expectationMatches: 1,
+        expectationAccuracy: 1
+      },
+      safety: {
+        events: 2,
+        routed: 2,
+        bypassed: 0,
+        errors: 0,
+        expectationChecks: 2,
+        expectationMatches: 1,
+        expectationAccuracy: 0.5
+      }
+    })
+    expect(JSON.stringify(summary)).not.toContain('迁移生产数据库')
+  })
+
   it('aggregates policy errors instead of stopping the whole replay', () => {
     const summary = replayPolicy(codexLunaSolPolicy, [
       { text: 'hello', oneShotTierId: 'premium', allowedTargetIds: ['fast'] },

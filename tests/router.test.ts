@@ -18,6 +18,17 @@ describe('routeMessage', () => {
     expect(decision?.reasons).toContain('explicit_quality')
   })
 
+  it('preserves regex escapes in the compiled TypeScript preset', () => {
+    const decision = routeMessage({ ...base, text: 'Think carefully and use the best model for this review' })
+    expect(decision?.target.id).toBe('premium')
+    expect(decision?.reasons).toContain('explicit_quality')
+  })
+
+  it('routes a code attachment to at least balanced', () => {
+    const decision = routeMessage({ ...base, text: '检查附件里的代码和测试结果', hasAttachments: true })
+    expect(decision?.target.id).toBe('balanced')
+  })
+
   it('keeps a complex continuation on the current model', () => {
     const decision = routeMessage({
       ...base,
@@ -107,9 +118,11 @@ describe('routeMessage', () => {
     expect(decision?.cacheRisk).toBe('high')
   })
 
-  it('loads and validates the published JSON preset', () => {
-    const policy = JSON.parse(readFileSync('presets/codex-luna-sol.json', 'utf8')) as RouterPolicy
+  it('keeps the published JSON preset identical to the compiled preset', () => {
+    const published = JSON.parse(readFileSync('presets/codex-luna-sol.json', 'utf8')) as RouterPolicy & { $schema?: string }
+    const { $schema: _schema, ...policy } = published
     expect(() => validatePolicy(policy)).not.toThrow()
+    expect(policy).toEqual(codexLunaSolPolicy)
   })
 
   it('routes arbitrary provider targets instead of depending on Codex names', () => {

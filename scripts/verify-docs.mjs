@@ -1,5 +1,5 @@
 import { readdir, readFile, stat } from 'node:fs/promises'
-import { dirname, extname, join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import sharp from 'sharp'
 
 const root = resolve('.')
@@ -38,13 +38,17 @@ for (const file of await markdownFiles(root)) {
 if (missing.length) throw new Error(`Broken relative links:\n${missing.join('\n')}`)
 if (replacement.length) throw new Error(`Unicode replacement characters in:\n${replacement.join('\n')}`)
 
-for (const name of ['hero.svg', 'architecture.svg', 'decision-demo.svg', 'social-preview.svg']) {
+for (const name of ['hero.svg', 'architecture.svg', 'decision-demo.svg', 'reference-evaluation.svg', 'social-preview.svg']) {
   const metadata = await sharp(join(root, 'assets', name)).metadata()
   if (!metadata.width || !metadata.height) throw new Error(`Unreadable asset: ${name}`)
 }
 const preview = await sharp(join(root, 'assets', 'social-preview.png')).metadata()
 if (preview.width !== 1280 || preview.height !== 640) {
   throw new Error(`social-preview.png must be 1280x640, got ${preview.width}x${preview.height}`)
+}
+const demo = await sharp(join(root, 'assets', 'turn-routing-demo.gif'), { animated: true }).metadata()
+if (demo.width !== 1200 || demo.pageHeight !== 675 || demo.pages !== 6) {
+  throw new Error(`turn-routing-demo.gif must be 1200x675 with 6 frames, got ${demo.width}x${demo.pageHeight} with ${demo.pages} frames`)
 }
 
 const pkg = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))

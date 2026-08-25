@@ -141,5 +141,7 @@ Rollback restores patched source, the previous Desktop plugin and catalog, Route
 - [Compatibility](compatibility.md)
 - [Architecture](architecture.md)
 - [CLI reference](cli.md)
+- [Reference evaluation](reference-evaluation.md)
+- [Providers and custom catalogs](providers.md)
 - [Troubleshooting](troubleshooting.md)
 - [Token and cache behavior](token-economics.md)

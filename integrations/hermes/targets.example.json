@@ -1,4 +1,5 @@
 {
+  "$schema": "./target-catalog.schema.json",
   "schema_version": 1,
   "max_cost_class": "premium",
   "allow_cross_provider": false,

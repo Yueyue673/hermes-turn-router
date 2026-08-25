@@ -17,6 +17,12 @@ A local, cache-aware, per-turn model router for [Hermes Agent](https://github.co
 > [!IMPORTANT]
 > The policy engine and CLI are portable. The Hermes execution bridge is intentionally version-pinned and currently tested with Hermes Agent `0.20.5` at commit `2584b7c4eca82ada05f16eba08936d157b483329`. See the [compatibility matrix](docs/compatibility.md) before installing.
 
+## See it route
+
+![Hermes Turn Router deterministic replay](assets/turn-routing-demo.gif)
+
+The animation is generated from the real `routeMessage()` function: simple, technical, explicit-quality, and 360K-context cache-affinity turns, followed by the tested fail-open capability path. It contains no model-generated or hand-edited routing results.
+
 ## Why this exists
 
 A fixed strong model wastes quota on routine turns. Naive per-turn switching can be worse: moving a large conversation to another model may discard the useful prompt-cache boundary and increase latency.
@@ -93,7 +99,7 @@ Replay the bundled anonymized fixture:
 node dist/cli.js replay --input examples/replay.ndjson
 ```
 
-The current fixture contains six expected decisions, six matches, one model switch, and zero routing errors.
+The small smoke fixture contains six expected decisions. The larger [reference evaluation](docs/reference-evaluation.md) covers 32 bilingual and stateful events across ten categories: 31 checked decisions, 31 matches, one intentional `off` bypass, and zero routing errors.
 
 ### B. Install the Hermes bridge
 
@@ -204,7 +210,7 @@ See [SECURITY.md](SECURITY.md) for the threat boundary and disclosure process.
 | Hermes source bridge | commit `2584b7c4eca82ada05f16eba08936d157b483329` |
 | Hermes version tested | `0.20.5` |
 | Packaged Desktop deploy | Windows unpacked release tested |
-| Other providers | Catalog structure supported; validate against the target profile |
+| Other providers | Custom policy/catalog build path available; validate against the target profile |
 
 Full matrix: [docs/compatibility.md](docs/compatibility.md).
 
@@ -212,6 +218,7 @@ Full matrix: [docs/compatibility.md](docs/compatibility.md).
 
 - The Hermes bridge is not a stable upstream plugin API yet; it ships as a versioned patch plus external Desktop plugin.
 - The reference router is explainable heuristic scoring, not a learned semantic classifier.
+- Release bundles embed the tested Codex policy by default; custom providers require a matching local policy, Gateway catalog, and custom plugin build.
 - Automatic feedback learning and interactive approval UI are not shipped.
 - `requires_approval` targets are hidden by the default Desktop control until approval UX exists.
 - macOS/Linux packaged Desktop deployment has not been verified.
@@ -225,6 +232,8 @@ Full matrix: [docs/compatibility.md](docs/compatibility.md).
 | [Architecture](docs/architecture.md) | trust boundaries and turn lifecycle |
 | [Hermes integration](integrations/hermes/README.md) | patch manifest and installer commands |
 | [CLI reference](docs/cli.md) | validate, route, replay options |
+| [Reference evaluation](docs/reference-evaluation.md) | generated category coverage and target distribution |
+| [Providers](docs/providers.md) | custom policy/catalog validation and plugin builds |
 | [Compatibility](docs/compatibility.md) | supported platforms and Hermes versions |
 | [Troubleshooting](docs/troubleshooting.md) | Gateway, catalog, latency, installer failures |
 | [Token economics](docs/token-economics.md) | cache risk and evaluation metrics |
@@ -245,7 +254,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md), a
 
 ## Project status
 
-Version `0.3.1` packages the cache-stable four-tier release with a verified getting-started path, compatibility matrix, troubleshooting guide, automated documentation checks, and a complete visual system. The execution core includes durable turn admission, server-authorized targets, large-context affinity, no-op/effort-only execution, truthful live model display, fail-open sends, and a version-pinned installer.
+Version `0.4.0` adds generated category-level evaluation, fixes compiled preset regex escapes, makes code attachments reach the balanced boundary, and provides a validated custom-provider Desktop build path. The execution core retains durable turn admission, server-authorized targets, large-context affinity, no-op/effort-only execution, truthful live model display, fail-open sends, and a version-pinned installer.
 
 This is a community project and is not affiliated with Nous Research.
 

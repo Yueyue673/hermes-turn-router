@@ -17,6 +17,13 @@ import { OneShotController } from '../../../src/one-shot.js'
 import { codexLunaSolPolicy } from '../../../src/presets.js'
 import { routeMessage } from '../../../src/router.js'
 import { requestHermesCapabilities } from '../../../src/capabilities.js'
+import type { RouterPolicy } from '../../../src/types.js'
+
+declare const __HERMES_TURN_ROUTER_POLICY__: RouterPolicy | undefined
+
+const desktopPolicy = typeof __HERMES_TURN_ROUTER_POLICY__ === 'undefined'
+  ? codexLunaSolPolicy
+  : __HERMES_TURN_ROUTER_POLICY__
 
 const PLUGIN_ID = 'hermes-turn-router'
 // `off` + Hermes' native model picker already provides a true fixed-model
@@ -69,7 +76,11 @@ function RouterControls() {
   const oneShotArmed = useValue($oneShotArmed)
   const status = useValue($status)
   const lastTarget = useValue($lastTarget)
+  const availableTargets = useValue($availableTargets)
   const gateway = useValue(host.state.gateway)
+  const bestTargetId = [...desktopPolicy.tiers]
+    .reverse()
+    .find(target => availableTargets.includes(target.id))?.id
   return jsxs('div', {
     className: 'flex items-center gap-1',
     title: status,
@@ -104,13 +115,14 @@ function RouterControls() {
         })
       }),
       jsx(Button, {
-        disabled: gateway !== 'open',
+        disabled: gateway !== 'open' || !bestTargetId,
         onClick: () => {
+          if (!bestTargetId) return
           if (oneShotArmed) {
             oneShot.disarm()
             $oneShotArmed.set(false)
           } else {
-            oneShot.arm('premium')
+            oneShot.arm(bestTargetId)
             $oneShotArmed.set(true)
           }
         },
@@ -183,7 +195,7 @@ const plugin = {
             const decision = routeMessage({
               text: draft.text,
               mode,
-              policy: codexLunaSolPolicy,
+              policy: desktopPolicy,
               allowedTargetIds: availableTargetIds,
               ...(snapshot ? { oneShotTierId: snapshot.targetId } : {}),
               hasAttachments: Boolean(draft.attachments?.length),

@@ -17,6 +17,12 @@
 > [!IMPORTANT]
 > 策略核心和 CLI 可以跨平台使用。Hermes 执行桥有意锁定上游版本，目前验证的是 Hermes Agent `0.20.5`、commit `2584b7c4eca82ada05f16eba08936d157b483329`。安装前请先看[兼容矩阵](docs/compatibility.md)。
 
+## 看它实际路由
+
+![Hermes Turn Router 确定性回放](assets/turn-routing-demo.gif)
+
+动画直接调用真实 `routeMessage()` 生成：简单请求、技术分析、明确质量要求、36 万上下文缓存保持，以及经过测试的 fail-open capability 路径。路由结果没有经过模型生成或人工修改。
+
 ## 为什么需要它
 
 所有消息固定使用强模型，会把额度浪费在普通 turn 上。粗暴地逐条切模型也可能更糟：长会话换到另一个模型后，已有 prompt cache 边界可能失效，延迟反而上升。
@@ -93,7 +99,7 @@ node dist/cli.js route \
 node dist/cli.js replay --input examples/replay.ndjson
 ```
 
-当前 fixture 包含 6 条期望决策：6 条命中、1 次模型切换、0 个路由错误。
+小型 smoke fixture 包含 6 条期望决策。更完整的[参考评估](docs/reference-evaluation.md)覆盖 10 类、32 条中英文和状态型事件：31 条受检决策全部命中，包含 1 条预期 `off` 旁路，路由错误为 0。
 
 ### B. 安装 Hermes 执行桥
 
@@ -204,7 +210,7 @@ const decision = routeMessage({
 | Hermes source bridge | commit `2584b7c4eca82ada05f16eba08936d157b483329` |
 | 已验证 Hermes 版本 | `0.20.5` |
 | Packaged Desktop 部署 | 已验证 Windows unpacked release |
-| 其他 provider | Catalog 结构支持，必须按目标 profile 验证 |
+| 其他 provider | 已提供自定义 policy/catalog 构建入口，必须按目标 profile 验证 |
 
 完整矩阵见 [docs/compatibility.md](docs/compatibility.md)。
 
@@ -212,6 +218,7 @@ const decision = routeMessage({
 
 - Hermes bridge 目前尚未成为稳定的 upstream plugin API，当前使用版本化 patch + 外置 Desktop plugin。
 - 参考 Router 采用可解释启发式评分，不包含训练型语义分类器。
+- Release bundle 默认嵌入已验证的 Codex policy；其他 provider 需要匹配的本地 policy、Gateway catalog 和自定义 plugin 构建。
 - 尚未提供自动反馈学习和交互式 approval UI。
 - 默认 Desktop 会隐藏 `requires_approval` target，直到批准 UI 完成。
 - macOS/Linux 的 packaged Desktop 部署尚未验证。
@@ -225,6 +232,8 @@ const decision = routeMessage({
 | [架构](docs/architecture.md) | 信任边界和 turn 生命周期 |
 | [Hermes 集成](integrations/hermes/README.md) | patch manifest 与安装命令 |
 | [CLI](docs/cli.md) | validate、route、replay 参数 |
+| [参考评估](docs/reference-evaluation.md) | 自动生成的分类覆盖和 target 分布 |
+| [Provider](docs/providers.md) | 自定义 policy/catalog 验证与 plugin 构建 |
 | [兼容性](docs/compatibility.md) | 支持平台与 Hermes 版本 |
 | [故障排查](docs/troubleshooting.md) | Gateway、catalog、延迟、安装问题 |
 | [Token 与缓存](docs/token-economics.md) | 缓存风险和评估指标 |
@@ -245,7 +254,7 @@ npm pack --dry-run
 
 ## 项目状态
 
-`0.3.1` 在缓存稳定的四档路由上补齐了已验证的开始路径、兼容矩阵、故障排查、文档自动校验和完整视觉系统。执行核心包含持久 turn admission、服务端 target 授权、长上下文粘滞、no-op/effort-only 执行、真实服务模型显示、fail-open 发送，以及面向已验证 Hermes commit 的版本化安装器。
+`0.4.0` 新增自动生成的分类评估，修复编译后 preset 正则转义，让“代码 + 附件”进入 balanced，并提供经过验证的自定义 Provider Desktop 构建入口。执行核心继续包含持久 turn admission、服务端 target 授权、长上下文粘滞、no-op/effort-only 执行、真实服务模型显示、fail-open 发送，以及面向已验证 Hermes commit 的版本化安装器。
 
 社区项目，与 Nous Research 无官方隶属关系。
 

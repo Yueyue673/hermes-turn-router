@@ -1,0 +1,52 @@
+name: Provider or model preset
+
+description: Propose or report compatibility for a Hermes provider/model catalog
+labels: [provider]
+body:
+  - type: markdown
+    attributes:
+      value: Do not paste API keys, OAuth tokens, private prompts, account IDs, or unsanitized logs.
+  - type: input
+    id: provider
+    attributes:
+      label: Hermes provider slug
+      placeholder: openai-codex
+    validations:
+      required: true
+  - type: input
+    id: models
+    attributes:
+      label: Exact model slugs
+      description: Preserve the identifiers exactly as Hermes reports them.
+    validations:
+      required: true
+  - type: input
+    id: hermes
+    attributes:
+      label: Hermes version and commit
+    validations:
+      required: true
+  - type: textarea
+    id: catalog
+    attributes:
+      label: Sanitized target mapping
+      description: List target IDs, model slugs, reasoning efforts, and cost classes. Never include credentials.
+    validations:
+      required: true
+  - type: checkboxes
+    id: evidence
+    attributes:
+      label: Compatibility evidence
+      options:
+        - label: Text response completed
+        - label: Tool call and tool result completed
+        - label: Error and interrupt restored the base runtime
+        - label: Queue/retry behavior was exercised
+        - label: Long-context cache behavior was observed
+  - type: textarea
+    id: notes
+    attributes:
+      label: Limits and evidence
+      description: Link public logs/fixtures or describe sanitized results and known gaps.
+    validations:
+      required: true

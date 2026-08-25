@@ -12,6 +12,8 @@ The installer refuses other commits and dirty source trees.
 
 - `desktop/plugin.js` — compiled Desktop plugin
 - `targets.example.json` — profile-scoped server target catalog
+- `target-catalog.schema.json` — editor/CI schema for Gateway catalogs
+- `catalogs/` — same-provider and mixed-provider templates
 - `backend/turn_router/` — target authorization, approval tokens, protocol normalization, and SQLite ledger
 - `patches/` — versioned Hermes core bridge
 - `scripts/install.py` — preflight, backup, installation, verification, Desktop deployment, and rollback
@@ -68,6 +70,20 @@ Rollback restores every patched source file, the previous plugin and catalog, an
 The Gateway reads `<hermes-home>/turn-router/targets.json`. Client requests contain a target ID; provider, model, reasoning effort, cost class, cross-provider policy, and approval requirements stay server-side.
 
 The default catalog contains `fast`, `balanced`, `strong`, and `premium`. Edit it before restart to match the models available to the profile.
+
+Validate a catalog with the same parser used by Gateway:
+
+```bash
+python integrations/hermes/scripts/validate_catalog.py C:/path/to/targets.json
+```
+
+The release plugin embeds the tested Codex policy. For another provider, build a matching local policy into the Desktop bundle before installation:
+
+```bash
+HERMES_TURN_ROUTER_POLICY=C:/path/to/policy.json npm run build
+```
+
+Policy and catalog target IDs must match. See [`../../docs/providers.md`](../../docs/providers.md) for the complete trust boundary, examples, and verification checklist.
 
 ## Protocol
 

@@ -1,6 +1,6 @@
 {
   "name": "hermes-turn-router",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "A cache-aware, per-turn model router for Hermes Agent",
   "repository": {
     "type": "git",
@@ -36,11 +36,15 @@
     "test:watch": "vitest",
     "test:cli": "node scripts/smoke-cli.mjs",
     "test:plugin": "node scripts/smoke-plugin.mjs",
+    "test:custom-policy": "node scripts/smoke-custom-policy.mjs",
     "test:integration": "python -m unittest discover -s integrations/hermes/tests -p test_*.py",
     "test:docs": "node scripts/verify-docs.mjs",
+    "evaluate:reference": "npm run build && node scripts/generate-reference-evaluation.mjs",
+    "test:evaluation": "node scripts/generate-reference-evaluation.mjs --check",
     "render:assets": "node scripts/render-assets.mjs",
+    "render:demo": "npm run build && node scripts/render-demo.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "check": "npm run typecheck && npm test && npm run test:integration && npm run build && npm run test:plugin && npm run test:cli && npm run test:docs"
+    "check": "npm run typecheck && npm test && npm run test:integration && npm run build && npm run test:custom-policy && npm run test:plugin && npm run test:cli && npm run test:evaluation && npm run test:docs"
   },
   "keywords": [
     "hermes-agent",
@@ -58,6 +62,7 @@
     "@electron/asar": "^3.4.1",
     "@types/node": "^22.0.0",
     "esbuild": "^0.28.2",
+    "gifenc": "^1.0.3",
     "sharp": "^0.35.3",
     "typescript": "^5.7.0",
     "vitest": "^3.2.0"

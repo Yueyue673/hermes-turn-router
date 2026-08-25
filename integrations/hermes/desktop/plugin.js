@@ -69,44 +69,44 @@ var codexLunaSolPolicy = {
     {
       id: "explicit-quality",
       reasonCode: "explicit_quality",
-      pattern: "(\u8BA4\u771F|\u4ED4\u7EC6|\u6DF1\u5165|\u6DF1\u5EA6|\u60F3\u6E05\u695A|\u9AD8\u8D28\u91CF|\u6700\u597D(?:\u7684)?\u6A21\u578B|\u6700\u5F3A|\u4E0D\u8981\u6577\u884D|strict(?:ly)? review|thinks+carefully|high[ -]?quality|bests+model)",
+      pattern: /(认真|仔细|深入|深度|想清楚|高质量|最好(?:的)?模型|最强|不要敷衍|strict(?:ly)? review|think\s+carefully|high[ -]?quality|best\s+model)/.source,
       weight: 90,
       forceUpgrade: true
     },
     {
       id: "explicit-saving",
       reasonCode: "explicit_saving",
-      pattern: "(\u7701\u989D\u5EA6|\u8282\u7701\u989D\u5EA6|\u7B80\u5355\u56DE\u7B54|\u7B80\u77ED\u56DE\u7B54|\u4E0D\u7528\u60F3\u592A\u591A|\u4F4E\u6210\u672C|saves+(?:tokens?|quota)|keeps+its+simple)",
+      pattern: /(省额度|节省额度|简单回答|简短回答|不用想太多|低成本|save\s+(?:tokens?|quota)|keep\s+it\s+simple)/.source,
       weight: -45
     },
     {
       id: "high-impact",
       reasonCode: "high_impact",
-      pattern: "(\u5220\u9664|\u8986\u76D6|\u6E05\u7A7A|\u8FC1\u79FB|\u6279\u91CF.*(?:\u6539|\u5199|\u91CD\u547D\u540D)|\u51ED\u636E|\u5BC6\u7801|token|apis*key|\u6743\u9650|\u5B89\u5168|\u9690\u79C1|\u751F\u4EA7\u73AF\u5883|\u4E0A\u7EBF|\u90E8\u7F72|\u670D\u52A1\u5668|\u6570\u636E\u5E93|\u5907\u4EFD|\u6062\u590D|\u56DE\u6EDA|\u652F\u4ED8|\u5408\u540C|\u533B\u7597|\u836F\u7269|delete|overwrite|migrat|credential|permission|security|privacy|production|deploy|database|backup|restore)",
+      pattern: /(删除|覆盖|清空|迁移|批量.*(?:改|写|重命名)|凭据|密码|token|api\s*key|权限|安全|隐私|生产环境|上线|部署|服务器|数据库|备份|恢复|回滚|支付|合同|医疗|药物|delete|overwrite|migrat|credential|permission|security|privacy|production|deploy|database|backup|restore)/.source,
       weight: 45
     },
     {
       id: "complex-reasoning",
       reasonCode: "complex_reasoning",
-      pattern: "(\u67B6\u6784|\u7CFB\u7EDF\u8BBE\u8BA1|\u6839\u56E0|\u590D\u76D8|\u53D6\u820D|\u6743\u8861|\u591A\u7EA6\u675F|\u957F\u671F\u65B9\u6848|\u81EA\u52A8\u5316|\u8DEF\u7531|\u6279\u5224|\u672C\u8D28|\u4EA4\u53C9\u9A8C\u8BC1|architecture|root cause|trade[ -]?off|multi[ -]?constraint|research|cross[ -]?validate)",
+      pattern: /(架构|系统设计|根因|复盘|取舍|权衡|多约束|长期方案|自动化|路由|批判|本质|交叉验证|architecture|root cause|trade[ -]?off|multi[ -]?constraint|research|cross[ -]?validate)/.source,
       weight: 35
     },
     {
       id: "code-tools",
       reasonCode: "code_or_tools",
-      pattern: "(```|\b(?:typescript|javascript|python|react|electron|api|git|sql|docker|regex|json|yaml)\b|\u4EE3\u7801|\u6E90\u7801|\u62A5\u9519|\u6D4B\u8BD5|\u6784\u5EFA|\u7F16\u8BD1|\u7EC8\u7AEF|\u547D\u4EE4|\u6587\u4EF6|\u7F51\u9875|\u641C\u7D22)",
+      pattern: /(```|\b(?:typescript|javascript|python|react|electron|api|git|sql|docker|regex|json|yaml)\b|代码|源码|报错|测试|构建|编译|终端|命令|文件|网页|搜索)/.source,
       weight: 14
     }
   ],
   simpleRequestPatterns: [
-    "^(\u4F60\u597D|\u55E8|hello|hi|\u8C22\u8C22|\u611F\u8C22|\u597D\u7684|\u597D|\u884C|\u53EF\u4EE5|\u6536\u5230|\u77E5\u9053\u4E86|\u55EF|\u54E6|\u7FFB\u8BD1[:\uFF1A]?|\u6DA6\u8272[:\uFF1A]?|\u683C\u5F0F\u5316[:\uFF1A]?|\u4EFB\u52A1\u5B8C\u6210\u4E86\u5417|\u4E0B\u8F7D\u597D\u4E86\u5417)[\uFF1F?\uFF01!\u3002sS]{0,32}$"
+    /^(你好|嗨|hello|hi|谢谢|感谢|好的|好|行|可以|收到|知道了|嗯|哦|翻译[:：]?|润色[:：]?|格式化[:：]?|任务完成了吗|下载好了吗)[？?！!。\s\S]{0,32}$/.source
   ],
   continuationPatterns: [
-    "^(\u4F60)?(\u7EE7\u7EED|\u63A5\u7740|\u5F80\u4E0B|\u7167\u8FD9\u4E2A\u505A|\u6309\u8FD9\u4E2A\u6765|\u7EE7\u7EED\u6267\u884C|\u7EE7\u7EED\u5427|\u5F00\u59CB\u5427|\u5C31\u8FD9\u6837\u505A)[\u5427\u3002\uFF01!s]*$",
-    "^(continue|keep going|go on|proceed)[.!s]*$"
+    /^(你)?(继续|接着|往下|照这个做|按这个来|继续执行|继续吧|开始吧|就这样做)[吧。！!\s]*$/.source,
+    /^(continue|keep going|go on|proceed)[.!\s]*$/.source
   ],
   modeBias: { auto: 0, save: -28, quality: 25 },
-  attachmentsWeight: 10,
+  attachmentsWeight: 11,
   mediumMessageChars: 180,
   mediumMessageWeight: 16,
   longMessageChars: 600,
@@ -341,6 +341,7 @@ async function requestHermesCapabilities(request, options = {}) {
 }
 
 // integrations/hermes/desktop/plugin-entry.ts
+var desktopPolicy = typeof __HERMES_TURN_ROUTER_POLICY__ === "undefined" ? codexLunaSolPolicy : __HERMES_TURN_ROUTER_POLICY__;
 var PLUGIN_ID = "hermes-turn-router";
 var MODES = ["auto", "save", "quality", "off"];
 var $mode = atom("auto");
@@ -384,7 +385,9 @@ function RouterControls() {
   const oneShotArmed = useValue($oneShotArmed);
   const status = useValue($status);
   const lastTarget = useValue($lastTarget);
+  const availableTargets = useValue($availableTargets);
   const gateway = useValue(host.state.gateway);
+  const bestTargetId = [...desktopPolicy.tiers].reverse().find((target) => availableTargets.includes(target.id))?.id;
   return jsxs("div", {
     className: "flex items-center gap-1",
     title: status,
@@ -419,13 +422,14 @@ function RouterControls() {
         })
       }),
       jsx(Button, {
-        disabled: gateway !== "open",
+        disabled: gateway !== "open" || !bestTargetId,
         onClick: () => {
+          if (!bestTargetId) return;
           if (oneShotArmed) {
             oneShot.disarm();
             $oneShotArmed.set(false);
           } else {
-            oneShot.arm("premium");
+            oneShot.arm(bestTargetId);
             $oneShotArmed.set(true);
           }
         },
@@ -492,7 +496,7 @@ var plugin = {
             const decision = routeMessage({
               text: draft.text,
               mode,
-              policy: codexLunaSolPolicy,
+              policy: desktopPolicy,
               allowedTargetIds: availableTargetIds,
               ...snapshot ? { oneShotTierId: snapshot.targetId } : {},
               hasAttachments: Boolean(draft.attachments?.length),

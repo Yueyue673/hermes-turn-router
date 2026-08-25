@@ -11,6 +11,10 @@ export interface ReplayObservation {
 }
 
 export interface ReplayEvent {
+  /** Stable public fixture identifier. Never place prompt text here. */
+  id?: string
+  /** Aggregate evaluation bucket, for example safety or cache. */
+  category?: string
   text: string
   mode?: RouterMode
   fixedTierId?: string
@@ -21,6 +25,16 @@ export interface ReplayEvent {
   state?: RouterState
   expectedTierId?: string
   observed?: ReplayObservation
+}
+
+export interface ReplayCategorySummary {
+  events: number
+  routed: number
+  bypassed: number
+  errors: number
+  expectationChecks: number
+  expectationMatches: number
+  expectationAccuracy: number | null
 }
 
 export interface ReplaySummary {
@@ -36,6 +50,7 @@ export interface ReplaySummary {
   byTarget: Record<string, number>
   byCacheRisk: Record<string, number>
   byReason: Record<string, number>
+  byCategory: Record<string, ReplayCategorySummary>
   errorMessages: Record<string, number>
   observedEvents: number
   inputTokens: number
@@ -65,6 +80,7 @@ export function replayPolicy(policy: RouterPolicy, events: ReplayEvent[]): Repla
     byTarget: {},
     byCacheRisk: {},
     byReason: {},
+    byCategory: {},
     errorMessages: {},
     observedEvents: 0,
     inputTokens: 0,
@@ -79,6 +95,17 @@ export function replayPolicy(policy: RouterPolicy, events: ReplayEvent[]): Repla
   let latencyTotal = 0
 
   for (const event of events) {
+    const categoryKey = event.category?.trim() || 'uncategorized'
+    const category = summary.byCategory[categoryKey] ??= {
+      events: 0,
+      routed: 0,
+      bypassed: 0,
+      errors: 0,
+      expectationChecks: 0,
+      expectationMatches: 0,
+      expectationAccuracy: null
+    }
+    category.events += 1
     try {
       const input: RouteInput = {
         text: event.text,
@@ -94,10 +121,12 @@ export function replayPolicy(policy: RouterPolicy, events: ReplayEvent[]): Repla
       const decision = routeMessage(input)
       if (!decision) {
         summary.bypassedEvents += 1
+        category.bypassed += 1
         continue
       }
 
       summary.routedEvents += 1
+      category.routed += 1
       if (decision.switched) summary.switches += 1
       increment(summary.byTarget, decision.target.id)
       increment(summary.byCacheRisk, decision.cacheRisk)
@@ -105,7 +134,11 @@ export function replayPolicy(policy: RouterPolicy, events: ReplayEvent[]): Repla
 
       if (event.expectedTierId) {
         summary.expectationChecks += 1
-        if (event.expectedTierId === decision.target.id) summary.expectationMatches += 1
+        category.expectationChecks += 1
+        if (event.expectedTierId === decision.target.id) {
+          summary.expectationMatches += 1
+          category.expectationMatches += 1
+        }
       }
       if (event.observed) {
         summary.observedEvents += 1
@@ -121,6 +154,7 @@ export function replayPolicy(policy: RouterPolicy, events: ReplayEvent[]): Repla
       }
     } catch (error) {
       summary.errors += 1
+      category.errors += 1
       increment(summary.errorMessages, error instanceof Error ? error.message : String(error))
     }
   }
@@ -131,5 +165,10 @@ export function replayPolicy(policy: RouterPolicy, events: ReplayEvent[]): Repla
     : summary.expectationMatches / summary.expectationChecks
   summary.cacheReadRatio = summary.inputTokens === 0 ? null : summary.cachedInputTokens / summary.inputTokens
   summary.averageLatencyMs = latencySamples === 0 ? null : latencyTotal / latencySamples
+  for (const category of Object.values(summary.byCategory)) {
+    category.expectationAccuracy = category.expectationChecks === 0
+      ? null
+      : category.expectationMatches / category.expectationChecks
+  }
   return summary
 }
