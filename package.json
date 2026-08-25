@@ -59,7 +59,7 @@
     "node": ">=20"
   },
   "devDependencies": {
-    "@electron/asar": "^3.4.1",
+    "@electron/asar": "^4.3.0",
     "@types/node": "^22.0.0",
     "esbuild": "^0.28.2",
     "gifenc": "^1.0.3",
