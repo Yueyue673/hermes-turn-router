@@ -27,6 +27,7 @@ class CatalogTests(unittest.TestCase):
 
     def test_cost_cross_provider_and_approval_are_server_authorized(self):
         limited = catalog(max_cost_class="standard")
+        self.assertEqual([target["id"] for target in limited.capabilities()["targets"]], ["fast"])
         with self.assertRaisesRegex(CatalogError, "cost cap") as cost_error:
             limited.resolve("premium", current_provider="p2", approved=True)
         self.assertEqual(cost_error.exception.code, "cost_cap_exceeded")

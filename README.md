@@ -48,7 +48,7 @@ The incident below came from a real 691-message session. A simple explanatory tu
 | Explicit controls | Desktop `auto`, `save`, `quality`, `off`, plus `Best once` |
 | Server authority | Client sends an opaque target ID; Gateway resolves provider/model/effort |
 | Durable admission | SQLite lease ledger with reserved/accepted/completed states and conflict detection |
-| Fail-open UX | Router capability failure warns and bypasses; it never swallows the user's message |
+| Fail-open UX | Capability and policy/catalog mismatch warn and bypass; the Router never swallows the user's message |
 | Truthful status | Desktop receives the model/effort actually serving the transient turn |
 | Replay evaluation | Target distribution, switch rate, cache risk, expectation accuracy, usage and latency fields |
 | Safe install | Commit/checksum preflight, ZIP backup, packaged Desktop staging, rollback |
@@ -254,7 +254,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md), a
 
 ## Project status
 
-Version `0.4.0` adds generated category-level evaluation, fixes compiled preset regex escapes, makes code attachments reach the balanced boundary, and provides a validated custom-provider Desktop build path. The execution core retains durable turn admission, server-authorized targets, large-context affinity, no-op/effort-only execution, truthful live model display, fail-open sends, and a version-pinned installer.
+Version `0.4.1` extends fail-open behavior to cost-capped, unknown-only, empty, and incompatible policy/catalog combinations. It builds on v0.4.0's generated category-level evaluation, compiled preset fixes, code-attachment boundary, and validated custom-provider Desktop build path.
 
 This is a community project and is not affiliated with Nous Research.
 

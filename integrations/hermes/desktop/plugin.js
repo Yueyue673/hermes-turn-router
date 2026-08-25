@@ -119,6 +119,53 @@ var codexLunaSolPolicy = {
   largeContextStickyTokens: 32e3
 };
 
+// src/capabilities.ts
+var HERMES_TURN_TARGET_CAPABILITY = "composer.turn-target.v1";
+function compatibleTargetIds(capabilities, policy) {
+  const policyIds = new Set(policy.tiers.map((target) => target.id));
+  return capabilities.targets.filter((target) => target.enabled && !target.requires_approval && policyIds.has(target.id)).map((target) => target.id);
+}
+var TARGET_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/;
+var COST_CLASSES = /* @__PURE__ */ new Set(["free", "low", "standard", "premium"]);
+function validateHermesCapabilities(value) {
+  if (!value || typeof value !== "object") throw new Error("routing capabilities are unavailable");
+  if (JSON.stringify(value).length > 65536) throw new Error("routing capability response is too large");
+  const data = value;
+  if (data.capability !== HERMES_TURN_TARGET_CAPABILITY || data.protocol_version !== 1) {
+    throw new Error(`Hermes Gateway does not support ${HERMES_TURN_TARGET_CAPABILITY}`);
+  }
+  if (!COST_CLASSES.has(String(data.max_cost_class)) || typeof data.allow_cross_provider !== "boolean") {
+    throw new Error("Hermes Gateway returned invalid routing policy metadata");
+  }
+  if (!Array.isArray(data.targets) || data.targets.length === 0 || data.targets.length > 64) {
+    throw new Error("Hermes Gateway returned an invalid routing target count");
+  }
+  const ids = /* @__PURE__ */ new Set();
+  for (const target of data.targets) {
+    if (!target || typeof target.id !== "string" || !TARGET_ID.test(target.id) || ids.has(target.id) || typeof target.label !== "string" || target.label.length > 128 || !COST_CLASSES.has(String(target.cost_class)) || typeof target.enabled !== "boolean" || typeof target.requires_approval !== "boolean") {
+      throw new Error("Hermes Gateway returned invalid routing targets");
+    }
+    ids.add(target.id);
+  }
+  return data;
+}
+var defaultSleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+async function requestHermesCapabilities(request, options = {}) {
+  const attempts = Math.max(1, Math.min(50, options.attempts ?? 12));
+  const delayMs = Math.max(0, Math.min(5e3, options.delayMs ?? 150));
+  const sleep = options.sleep ?? defaultSleep;
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return validateHermesCapabilities(await request());
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts) await sleep(delayMs);
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
+}
+
 // src/router.ts
 var SAFE_PATTERN_FLAGS = /^[gimsuy]*$/;
 function compile(rule) {
@@ -297,47 +344,16 @@ function routeMessage(input) {
   return finish(target, score, raw.id, reasons, hysteresisApplied);
 }
 
-// src/capabilities.ts
-var HERMES_TURN_TARGET_CAPABILITY = "composer.turn-target.v1";
-var TARGET_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/;
-var COST_CLASSES = /* @__PURE__ */ new Set(["free", "low", "standard", "premium"]);
-function validateHermesCapabilities(value) {
-  if (!value || typeof value !== "object") throw new Error("routing capabilities are unavailable");
-  if (JSON.stringify(value).length > 65536) throw new Error("routing capability response is too large");
-  const data = value;
-  if (data.capability !== HERMES_TURN_TARGET_CAPABILITY || data.protocol_version !== 1) {
-    throw new Error(`Hermes Gateway does not support ${HERMES_TURN_TARGET_CAPABILITY}`);
+// src/safe-route.ts
+function routeMessageSafely(input) {
+  try {
+    return { decision: routeMessage(input), error: null };
+  } catch (error) {
+    return {
+      decision: null,
+      error: error instanceof Error ? error.message : String(error)
+    };
   }
-  if (!COST_CLASSES.has(String(data.max_cost_class)) || typeof data.allow_cross_provider !== "boolean") {
-    throw new Error("Hermes Gateway returned invalid routing policy metadata");
-  }
-  if (!Array.isArray(data.targets) || data.targets.length === 0 || data.targets.length > 64) {
-    throw new Error("Hermes Gateway returned an invalid routing target count");
-  }
-  const ids = /* @__PURE__ */ new Set();
-  for (const target of data.targets) {
-    if (!target || typeof target.id !== "string" || !TARGET_ID.test(target.id) || ids.has(target.id) || typeof target.label !== "string" || target.label.length > 128 || !COST_CLASSES.has(String(target.cost_class)) || typeof target.enabled !== "boolean" || typeof target.requires_approval !== "boolean") {
-      throw new Error("Hermes Gateway returned invalid routing targets");
-    }
-    ids.add(target.id);
-  }
-  return data;
-}
-var defaultSleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
-async function requestHermesCapabilities(request, options = {}) {
-  const attempts = Math.max(1, Math.min(50, options.attempts ?? 12));
-  const delayMs = Math.max(0, Math.min(5e3, options.delayMs ?? 150));
-  const sleep = options.sleep ?? defaultSleep;
-  let lastError;
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    try {
-      return validateHermesCapabilities(await request());
-    } catch (error) {
-      lastError = error;
-      if (attempt < attempts) await sleep(delayMs);
-    }
-  }
-  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
 // integrations/hermes/desktop/plugin-entry.ts
@@ -359,11 +375,10 @@ async function refreshCapabilities(attempts = 12) {
         () => host.request("router.capabilities", {}),
         { attempts, delayMs: 150 }
       );
-      $availableTargets.set(
-        response.targets.filter((target) => target.enabled && !target.requires_approval).map((target) => target.id)
-      );
-      $status.set(`${response.targets.length} targets available`);
-      return true;
+      const compatibleTargets = compatibleTargetIds(response, desktopPolicy);
+      $availableTargets.set(compatibleTargets);
+      $status.set(`${compatibleTargets.length}/${response.targets.length} targets compatible`);
+      return compatibleTargets.length > 0;
     } catch (error) {
       $availableTargets.set([]);
       $status.set(error instanceof Error ? error.message : String(error));
@@ -493,7 +508,7 @@ var plugin = {
               return draft;
             }
             const reasoningState = host.state.reasoningEffort;
-            const decision = routeMessage({
+            const routed = routeMessageSafely({
               text: draft.text,
               mode,
               policy: desktopPolicy,
@@ -507,6 +522,18 @@ var plugin = {
                 currentReasoningEffort: reasoningState?.get?.()
               }
             });
+            if (routed.error) {
+              oneShot.rejected(draft.turnEnvelope.clientTurnId);
+              if (snapshot) {
+                oneShot.disarm();
+                $oneShotArmed.set(false);
+              }
+              $lastTarget.set("bypass");
+              $status.set(`Policy mismatch: ${routed.error}`);
+              host.notify({ kind: "warning", message: `Router bypassed: ${routed.error}` });
+              return draft;
+            }
+            const decision = routed.decision;
             if (!decision) return draft;
             $lastTarget.set(decision.target.label);
             $status.set(`${decision.target.label} \xB7 ${decision.reasons.join(", ")}`);

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.1 - 2026-08-25
+
+- Filtered targets above the Gateway `max_cost_class` out of capability responses while retaining server-side resolution checks.
+- Intersected Gateway targets with the embedded Desktop policy and excluded disabled/approval-required targets before routing.
+- Added `routeMessageSafely()` so invalid or empty policy/catalog combinations bypass visibly and preserve the native Hermes send.
+- Disarmed an incompatible pending one-shot after policy mismatch to prevent repeated bypass loops.
+- Added tests for capped capabilities, target intersection, unknown-only catalogs, and disallowed one-shot targets.
+- Corrected the public `target_unknown` error code and fail-open integration documentation, then added documentation contract checks.
+- Updated the versioned Hermes patch and installer checksum with the cost-cap capability behavior.
+
 ## 0.4.0 - 2026-08-25
 
 ### Routing and evaluation

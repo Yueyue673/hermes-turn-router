@@ -6,7 +6,9 @@ for (const marker of [
   'routingIntent',
   'router.capabilities',
   'Best once',
-  'Router bypassed'
+  'Router bypassed',
+  'Policy mismatch',
+  'targets compatible'
 ]) {
   if (!plugin.includes(marker)) throw new Error(`Desktop plugin is missing marker: ${marker}`)
 }

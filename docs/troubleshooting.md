@@ -37,6 +37,17 @@ Common causes:
 - old Plugin SDK in the running `app.asar`;
 - unsupported Hermes commit.
 
+## `Router bypassed: no compatible targets`
+
+Gateway responded, but no enabled and pre-authorized target ID intersects the policy embedded in the Desktop plugin. Targets above `max_cost_class` are not advertised. Approval-required targets are also excluded from the default control.
+
+- Keep policy and catalog target IDs aligned.
+- Build a matching plugin with `HERMES_TURN_ROUTER_POLICY=C:/path/to/policy.json npm run build`.
+- Validate the catalog with `integrations/hermes/scripts/validate_catalog.py`.
+- Do not rename only the Gateway targets while leaving the release Codex policy embedded.
+
+The current message continues with Hermes' native model. An incompatible pending one-shot is disarmed so later auto turns do not enter a repeated bypass loop.
+
 ## A simple turn becomes unexpectedly slow
 
 Check the model that actually served the turn, not only the base model selected in the composer.
@@ -63,7 +74,7 @@ A first request to a different model may need to process the full conversation p
 
 Upgrade to 0.3.0+ and reinstall the Hermes bridge. Earlier transient routing did not publish serving-model state, so Desktop could display the restored base model while another model handled the turn.
 
-## `unknown_target`
+## `target_unknown`
 
 The Desktop requested a target ID that is absent or disabled in the Gateway catalog.
 

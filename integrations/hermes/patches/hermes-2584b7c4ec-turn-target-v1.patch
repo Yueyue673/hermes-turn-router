@@ -636,16 +636,17 @@ index d53edca1d3..502c6ae3f1 100644
    })
 diff --git a/tests/tui_gateway/test_turn_router_mature.py b/tests/tui_gateway/test_turn_router_mature.py
 new file mode 100644
-index 0000000000..bdf246a54b
+index 0000000000..167b48fdfb
 --- /dev/null
 +++ b/tests/tui_gateway/test_turn_router_mature.py
-@@ -0,0 +1,157 @@
+@@ -0,0 +1,170 @@
 +import json
 +from pathlib import Path
 +
 +import pytest
 +
 +from tui_gateway import server
++from tui_gateway.turn_router.catalog import TargetCatalog
 +
 +
 +def write_catalog(home: Path):
@@ -753,6 +754,18 @@ index 0000000000..bdf246a54b
 +
 +def test_router_capability_method_is_registered():
 +    assert "router.capabilities" in server._methods
++
++
++def test_router_capabilities_hide_targets_above_cost_ceiling():
++    catalog = TargetCatalog.from_dict({
++        "schema_version": 1,
++        "max_cost_class": "standard",
++        "targets": [
++            {"id": "fast", "provider": "p", "model": "m1", "cost_class": "low"},
++            {"id": "premium", "provider": "p", "model": "m2", "cost_class": "premium"},
++        ],
++    })
++    assert [target["id"] for target in catalog.capabilities()["targets"]] == ["fast"]
 +
 +
 +class FakeAgent:
@@ -1614,10 +1627,10 @@ index 0000000000..97fa20c40d
 +]
 diff --git a/tui_gateway/turn_router/catalog.py b/tui_gateway/turn_router/catalog.py
 new file mode 100644
-index 0000000000..b3afafa7a2
+index 0000000000..8864ebf9d7
 --- /dev/null
 +++ b/tui_gateway/turn_router/catalog.py
-@@ -0,0 +1,212 @@
+@@ -0,0 +1,216 @@
 +from __future__ import annotations
 +
 +import base64
@@ -1805,7 +1818,11 @@ index 0000000000..b3afafa7a2
 +            "protocol_version": 1,
 +            "max_cost_class": self.max_cost_class,
 +            "allow_cross_provider": self.allow_cross_provider,
-+            "targets": [target.public_dict() for target in self._targets.values() if target.enabled],
++            "targets": [
++                target.public_dict()
++                for target in self._targets.values()
++                if target.enabled and _COST_RANK[target.cost_class] <= _COST_RANK[self.max_cost_class]
++            ],
 +        }
 +
 +    def resolve(

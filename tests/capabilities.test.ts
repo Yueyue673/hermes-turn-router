@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { requestHermesCapabilities, validateHermesCapabilities } from '../src/capabilities.js'
+import { compatibleTargetIds, requestHermesCapabilities, validateHermesCapabilities } from '../src/capabilities.js'
+import { codexLunaSolPolicy } from '../src/presets.js'
 
 const capability = {
   capability: 'composer.turn-target.v1',
@@ -27,6 +28,19 @@ describe('validateHermesCapabilities', () => {
   it('fails explicitly on an incompatible gateway', () => {
     expect(() => validateHermesCapabilities({ capability: 'legacy', protocol_version: 0, targets: [] }))
       .toThrow('does not support')
+  })
+
+  it('intersects enabled, pre-authorized capability targets with the local policy', () => {
+    const negotiated = validateHermesCapabilities({
+      ...capability,
+      targets: [
+        { id: 'fast', label: 'Fast', cost_class: 'low', enabled: true, requires_approval: false },
+        { id: 'premium', label: 'Premium', cost_class: 'premium', enabled: true, requires_approval: true },
+        { id: 'disabled', label: 'Disabled', cost_class: 'low', enabled: false, requires_approval: false },
+        { id: 'custom', label: 'Custom', cost_class: 'low', enabled: true, requires_approval: false }
+      ]
+    })
+    expect(compatibleTargetIds(negotiated, codexLunaSolPolicy)).toEqual(['fast'])
   })
 })
 

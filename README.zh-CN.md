@@ -48,7 +48,7 @@ Hermes Turn Router 把四类本应一起判断的信息放进同一次决策：
 | 明确控制 | Desktop 提供 `auto`、`save`、`quality`、`off` 和 `Best once` |
 | 服务端授权 | 客户端只提交不透明 target ID，Gateway 解析真实模型 |
 | 持久准入 | SQLite lease ledger，包含 reserved/accepted/completed 与冲突检测 |
-| Fail-open | Router 能力异常时提示并旁路，绝不吞掉用户消息 |
+| Fail-open | Capability 或 policy/catalog 不匹配时提示并旁路，绝不吞掉用户消息 |
 | 真实状态 | Desktop 显示当前临时 turn 实际使用的模型与 effort |
 | 回放评估 | target 分布、切换率、缓存风险、期望命中、usage 与 latency 字段 |
 | 安全安装 | commit/hash 预检、ZIP 备份、Desktop staging、完整回滚 |
@@ -254,7 +254,7 @@ npm pack --dry-run
 
 ## 项目状态
 
-`0.4.0` 新增自动生成的分类评估，修复编译后 preset 正则转义，让“代码 + 附件”进入 balanced，并提供经过验证的自定义 Provider Desktop 构建入口。执行核心继续包含持久 turn admission、服务端 target 授权、长上下文粘滞、no-op/effort-only 执行、真实服务模型显示、fail-open 发送，以及面向已验证 Hermes commit 的版本化安装器。
+`0.4.1` 把 fail-open 扩展到 cost cap、unknown-only、空集合和不兼容 policy/catalog。它继续包含 v0.4.0 的自动分类评估、编译 preset 修复、“代码 + 附件”边界，以及经过验证的自定义 Provider Desktop 构建入口。
 
 社区项目，与 Nous Research 无官方隶属关系。
 

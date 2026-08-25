@@ -185,7 +185,11 @@ class TargetCatalog:
             "protocol_version": 1,
             "max_cost_class": self.max_cost_class,
             "allow_cross_provider": self.allow_cross_provider,
-            "targets": [target.public_dict() for target in self._targets.values() if target.enabled],
+            "targets": [
+                target.public_dict()
+                for target in self._targets.values()
+                if target.enabled and _COST_RANK[target.cost_class] <= _COST_RANK[self.max_cost_class]
+            ],
         }
 
     def resolve(

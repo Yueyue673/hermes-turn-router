@@ -1,3 +1,5 @@
+import type { RouterPolicy } from './types.js'
+
 export const HERMES_TURN_TARGET_CAPABILITY = 'composer.turn-target.v1'
 
 export interface PublicRoutingTarget {
@@ -20,6 +22,16 @@ export interface CapabilityRetryOptions {
   attempts?: number
   delayMs?: number
   sleep?: (milliseconds: number) => Promise<void>
+}
+
+export function compatibleTargetIds(
+  capabilities: HermesRoutingCapabilities,
+  policy: RouterPolicy
+): string[] {
+  const policyIds = new Set(policy.tiers.map(target => target.id))
+  return capabilities.targets
+    .filter(target => target.enabled && !target.requires_approval && policyIds.has(target.id))
+    .map(target => target.id)
 }
 
 const TARGET_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/

@@ -15,8 +15,8 @@ import { jsx, jsxs } from 'react/jsx-runtime'
 
 import { OneShotController } from '../../../src/one-shot.js'
 import { codexLunaSolPolicy } from '../../../src/presets.js'
-import { routeMessage } from '../../../src/router.js'
-import { requestHermesCapabilities } from '../../../src/capabilities.js'
+import { compatibleTargetIds, requestHermesCapabilities } from '../../../src/capabilities.js'
+import { routeMessageSafely } from '../../../src/safe-route.js'
 import type { RouterPolicy } from '../../../src/types.js'
 
 declare const __HERMES_TURN_ROUTER_POLICY__: RouterPolicy | undefined
@@ -46,13 +46,10 @@ async function refreshCapabilities(attempts = 12): Promise<boolean> {
         () => host.request('router.capabilities', {}),
         { attempts, delayMs: 150 }
       )
-      $availableTargets.set(
-        response.targets
-          .filter(target => target.enabled && !target.requires_approval)
-          .map(target => target.id)
-      )
-      $status.set(`${response.targets.length} targets available`)
-      return true
+      const compatibleTargets = compatibleTargetIds(response, desktopPolicy)
+      $availableTargets.set(compatibleTargets)
+      $status.set(`${compatibleTargets.length}/${response.targets.length} targets compatible`)
+      return compatibleTargets.length > 0
     } catch (error) {
       $availableTargets.set([])
       $status.set(error instanceof Error ? error.message : String(error))
@@ -192,7 +189,7 @@ const plugin = {
             const reasoningState = (host.state as unknown as {
               reasoningEffort?: { get?: () => string }
             }).reasoningEffort
-            const decision = routeMessage({
+            const routed = routeMessageSafely({
               text: draft.text,
               mode,
               policy: desktopPolicy,
@@ -206,6 +203,18 @@ const plugin = {
                 currentReasoningEffort: reasoningState?.get?.()
               }
             })
+            if (routed.error) {
+              oneShot.rejected(draft.turnEnvelope.clientTurnId)
+              if (snapshot) {
+                oneShot.disarm()
+                $oneShotArmed.set(false)
+              }
+              $lastTarget.set('bypass')
+              $status.set(`Policy mismatch: ${routed.error}`)
+              host.notify({ kind: 'warning', message: `Router bypassed: ${routed.error}` })
+              return draft
+            }
+            const decision = routed.decision
             if (!decision) return draft
             $lastTarget.set(decision.target.label)
             $status.set(`${decision.target.label} · ${decision.reasons.join(', ')}`)

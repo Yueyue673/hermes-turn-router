@@ -64,7 +64,7 @@ npm run build
 - editing queued text discards its stale envelope
 - one-shot consumes after accepted submit response
 - rejected submits leave one-shot armed
-- capability failure cancels routed sends
+- capability and policy/catalog mismatch both bypass visibly and preserve the native Hermes send
 - `off` mode uses normal Hermes model selection
 
 ### Runtime restoration

@@ -63,4 +63,13 @@ for (const [name, text] of [['README.md', readme], ['README.zh-CN.md', zh]]) {
   }
 }
 
+const troubleshooting = await readFile(join(root, 'docs', 'troubleshooting.md'), 'utf8')
+const integrationDocs = await readFile(join(root, 'docs', 'hermes-integration.md'), 'utf8')
+if (!troubleshooting.includes('`target_unknown`') || troubleshooting.includes('`unknown_target`')) {
+  throw new Error('Troubleshooting must use the public Gateway error code target_unknown')
+}
+if (integrationDocs.includes('capability failure cancels routed sends')) {
+  throw new Error('Hermes integration docs contradict the fail-open send contract')
+}
+
 console.log('Documentation and asset checks passed')
