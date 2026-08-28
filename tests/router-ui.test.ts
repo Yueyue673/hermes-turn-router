@@ -19,6 +19,8 @@ describe('router control presentation', () => {
     expect(compactTargetLabel('Sol · Medium')).toBe('SOL M')
     expect(compactTargetLabel('Sol · High')).toBe('SOL H')
     expect(compactTargetLabel('Sol · XHigh')).toBe('SOL XH')
+    expect(compactTargetLabel('  custom\t ·\n target  ')).toBe('CUSTOM TARGET')
+    expect(compactTargetLabel('x'.repeat(1000))).toBe('XXXXXXXXXXXXX…')
     expect(compactTargetLabel('A very long custom provider target')).toHaveLength(14)
   })
 

@@ -258,7 +258,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md), a
 
 ## Project status
 
-Version `0.5.0` makes Router state directly perceptible in the Composer: colored mode pills, lifecycle text, target labels, offline/bypass status, accessible announcements, and explicit Best once feedback. It retains v0.4.1's fail-open behavior for cost-capped, unknown-only, empty, and incompatible policy/catalog combinations.
+Version `0.5.1` provides the perceptible Composer controls from v0.5.0 and replaces custom target-label regex normalization with a bounded linear scanner after CodeQL review. It retains v0.4.1's fail-open behavior for cost-capped, unknown-only, empty, and incompatible policy/catalog combinations.
 
 This is a community project and is not affiliated with Nous Research.
 

@@ -38,7 +38,18 @@ export function compactTargetLabel(label: string): string {
     'Sol · XHigh': 'SOL XH'
   }
   if (known[label]) return known[label]
-  const normalized = label.replace(/\s*·\s*/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase()
+  const words: string[] = []
+  let word = ''
+  for (const char of label.slice(0, 256)) {
+    if (char === '·' || char.trim() === '') {
+      if (word) words.push(word)
+      word = ''
+    } else {
+      word += char
+    }
+  }
+  if (word) words.push(word)
+  const normalized = words.join(' ').toUpperCase()
   return normalized.length > 14 ? `${normalized.slice(0, 13)}…` : normalized
 }
 

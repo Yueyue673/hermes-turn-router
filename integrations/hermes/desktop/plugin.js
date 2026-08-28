@@ -391,7 +391,18 @@ function compactTargetLabel(label) {
     "Sol \xB7 XHigh": "SOL XH"
   };
   if (known[label]) return known[label];
-  const normalized = label.replace(/\s*·\s*/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
+  const words = [];
+  let word = "";
+  for (const char of label.slice(0, 256)) {
+    if (char === "\xB7" || char.trim() === "") {
+      if (word) words.push(word);
+      word = "";
+    } else {
+      word += char;
+    }
+  }
+  if (word) words.push(word);
+  const normalized = words.join(" ").toUpperCase();
   return normalized.length > 14 ? `${normalized.slice(0, 13)}\u2026` : normalized;
 }
 function routerStatusTone(mode, state) {

@@ -258,7 +258,7 @@ npm pack --dry-run
 
 ## 项目状态
 
-`0.5.0` 让 Router 状态在 Composer 中直接可感知：彩色模式 pill、生命周期文字、target 标签、离线/旁路状态、无障碍播报，以及明确的 Best once 反馈。它继续保留 v0.4.1 对 cost cap、unknown-only、空集合和不兼容 policy/catalog 的 fail-open 保护。
+`0.5.1` 保留 v0.5.0 的可感知 Composer 控件，并在 CodeQL 审查后把自定义 target 标签的正则归一化替换成有界线性扫描。它继续保留 v0.4.1 对 cost cap、unknown-only、空集合和不兼容 policy/catalog 的 fail-open 保护。
 
 社区项目，与 Nous Research 无官方隶属关系。
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.1 - 2026-08-28
+
+- Replaced regex-based custom target-label normalization with a bounded 256-character single-pass scanner.
+- Added whitespace and oversized-label regression tests.
+- Removes the CodeQL `js/polynomial-redos` high-severity finding introduced by the v0.5.0 UI helper.
+
 ## 0.5.0 - 2026-08-28
 
 - Replaced the low-contrast ghost Router control with a bordered status pill that combines mode color, status dot, explicit text, tooltip, and accessible label.
