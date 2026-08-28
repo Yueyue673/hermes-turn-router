@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.3 - 2026-08-28
+
+- Removed every routine Router toast: mode changes, Best once armed/cancelled/consumed, capability bypass and policy mismatch no longer create dismissible notifications.
+- Kept all feedback in the Composer pill, status dot, button text and tooltip, where it stays visible without covering the conversation.
+- Eliminated persistent warning notifications whose Hermes default duration is zero and therefore required clicking the close button.
+- Added a plugin smoke guard that fails if `host.notify(` is reintroduced into the Router source.
+
 ## 0.5.2 - 2026-08-28
 
 - Corrected the Codex reference premium target from Sol XHigh to the actually higher supported Sol Ultra effort.

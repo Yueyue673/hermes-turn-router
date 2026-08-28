@@ -160,7 +160,7 @@ Keep IDs aligned. The Gateway never trusts provider/model strings from Desktop.
 
 ![Perceptible Router control states](assets/control-states.svg)
 
-The Composer control combines color, status dot, text, tooltip, and toast feedback. Mode and lifecycle are always named explicitly, so checking, routing, bypass, offline, native-off, selected target, and one-shot armed states do not rely on color alone.
+The Composer control combines color, status dot, text, and tooltip feedback. Mode and lifecycle are always named explicitly, so checking, routing, bypass, offline, native-off, selected target, and one-shot armed states do not rely on color alone. Routine Router state never creates a dismissible toast or covers the conversation.
 
 | Control | Meaning |
 |---|---|
@@ -258,7 +258,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md), a
 
 ## Project status
 
-Version `0.5.2` corrects the reference highest target to Sol Ultra and makes Best once depend on explicit Gateway `quality_rank`, never target names or array order. It retains the perceptible controls, bounded label scanner, and fail-open behavior from earlier v0.5 releases.
+Version `0.5.3` keeps all routine Router feedback inside the Composer and removes persistent dismissible toasts. It retains v0.5.2's Sol Ultra target and explicit Gateway `quality_rank` authority.
 
 This is a community project and is not affiliated with Nous Research.
 

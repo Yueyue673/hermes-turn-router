@@ -52,6 +52,6 @@
   </g>
 
   <line x1="48" y1="374" x2="1152" y2="374" stroke="#55585f" stroke-width="1"/>
-  <text x="48" y="405" font-size="12" fill="#8d9199">COLOR + DOT + TEXT + TOOLTIP + TOAST · NO STATE RELIES ON COLOR ALONE</text>
+  <text x="48" y="405" font-size="12" fill="#8d9199">COLOR + DOT + TEXT + TOOLTIP · QUIET FEEDBACK, NO DISMISSIBLE TOASTS</text>
 </g>
 </svg>

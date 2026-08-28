@@ -160,7 +160,7 @@ Target 在两个地方声明，各自承担不同信任角色：
 
 ![可感知的 Router 控件状态](assets/control-states.svg)
 
-Composer 控件同时使用颜色、状态点、文字、Tooltip 和 Toast。检查中、路由中、旁路、离线、原生关闭、已选 target 和 one-shot 已武装都有明确文字，不依赖颜色单独传达状态。
+Composer 控件同时使用颜色、状态点、文字和 Tooltip。检查中、路由中、旁路、离线、原生关闭、已选 target 和 one-shot 已武装都有明确文字，不依赖颜色单独传达状态。Router 的日常状态不再弹出需要手动关闭、遮挡对话的 Toast。
 
 | 控件 | 含义 |
 |---|---|
@@ -258,7 +258,7 @@ npm pack --dry-run
 
 ## 项目状态
 
-`0.5.2` 把参考最高档修正为 Sol Ultra，并让 Best once 只依赖 Gateway 显式 `quality_rank`，不再看 target 名字或数组顺序。它继续保留 v0.5 的可感知控件、有界标签扫描和 fail-open 保护。
+`0.5.3` 把 Router 的日常反馈全部留在 Composer，移除常驻且需要手动关闭的 Toast。它继续保留 v0.5.2 的 Sol Ultra 与 Gateway 显式 `quality_rank` 权威。
 
 社区项目，与 Nous Research 无官方隶属关系。
 

@@ -510,11 +510,6 @@ function setMode(mode) {
     $visualState.set("offline");
     $status.set("Gateway offline \xB7 native Hermes send remains available");
   }
-  host.notify({
-    kind: "info",
-    title: `Router \xB7 ${presentation.label}`,
-    message: presentation.description
-  });
 }
 function RouterControls() {
   const mode = useValue($mode);
@@ -616,15 +611,9 @@ function RouterControls() {
             if (oneShotArmed) {
               oneShot.disarm();
               $oneShotArmed.set(false);
-              host.notify({ kind: "info", title: "Best once cancelled", message: "Automatic routing mode is unchanged." });
             } else {
               oneShot.arm(bestTargetId);
               $oneShotArmed.set(true);
-              host.notify({
-                kind: "info",
-                title: "Best once armed",
-                message: `Next accepted turn uses ${targetLabel(bestTargetId)}.`
-              });
             }
           },
           size: "xs",
@@ -662,7 +651,6 @@ var plugin = {
       $visualState.set("ready");
       const selected = $lastTarget.get() || "best target";
       $status.set(`Best once consumed \xB7 ${selected}`);
-      host.notify({ kind: "info", title: "Best once consumed", message: `${selected} accepted this turn.` });
     };
     const acceptedHook = HermesSdk.onTurnAccepted;
     if (typeof acceptedHook === "function") {
@@ -718,7 +706,6 @@ var plugin = {
               oneShot.rejected(draft.turnEnvelope.clientTurnId);
               $lastTarget.set("bypass");
               $visualState.set("bypass");
-              host.notify({ kind: "warning", message: `Router bypassed: ${$status.get()}` });
               return draft;
             }
             const reasoningState = host.state.reasoningEffort;
@@ -747,7 +734,6 @@ var plugin = {
               $lastTarget.set("bypass");
               $visualState.set("bypass");
               $status.set(`Policy mismatch: ${routed.error}`);
-              host.notify({ kind: "warning", message: `Router bypassed: ${routed.error}` });
               return draft;
             }
             const decision = routed.decision;
