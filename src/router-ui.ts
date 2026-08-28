@@ -1,5 +1,6 @@
 export const ROUTER_CONTROL_MODES = ['auto', 'save', 'quality', 'off'] as const
 export type RouterControlMode = typeof ROUTER_CONTROL_MODES[number]
+export const DEFAULT_ROUTER_MODE: RouterControlMode = 'off'
 export type RouterVisualState = 'checking' | 'ready' | 'routing' | 'bypass' | 'offline'
 export type RouterStatusTone = 'good' | 'muted' | 'warn' | 'bad'
 

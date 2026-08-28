@@ -18,5 +18,8 @@ for (const marker of [
 }
 if (plugin.includes('modelOverride')) throw new Error('Desktop plugin contains a client model override')
 if (pluginSource.includes('host.notify(')) throw new Error('Routine Router state must not create dismissible toasts')
+if (!pluginSource.includes("ctx.storage.get('settings', { mode: DEFAULT_ROUTER_MODE })")) {
+  throw new Error('Desktop plugin must use the exported off-by-default mode for fresh storage')
+}
 if (plugin.includes('\uFFFD')) throw new Error('Desktop plugin contains a Unicode replacement character')
 console.log('Desktop plugin smoke tests passed')

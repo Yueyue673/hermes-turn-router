@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  DEFAULT_ROUTER_MODE,
   compactTargetLabel,
   routerPillText,
   routerStatusTone,
@@ -7,6 +8,10 @@ import {
 } from '../src/router-ui.js'
 
 describe('router control presentation', () => {
+  it('defaults to native Hermes selection until routing is explicitly enabled', () => {
+    expect(DEFAULT_ROUTER_MODE).toBe('off')
+  })
+
   it('makes every mode explicit and explains its behavior', () => {
     expect(ROUTER_MODE_PRESENTATION.auto.description).toContain('every new turn')
     expect(ROUTER_MODE_PRESENTATION.save.description).toContain('lower-cost')

@@ -45,7 +45,7 @@ The incident below came from a real 691-message session. A simple explanatory tu
 | Local policy | Synchronous TypeScript decision; no network or filesystem side effects |
 | Four target tiers | Luna Medium, Sol Medium, Sol High, Sol Ultra in the reference policy |
 | Cache stability | Auto mode holds established targets for 32K+ contexts instead of marginal downgrades |
-| Explicit controls | Desktop `auto`, `save`, `quality`, `off`, plus `Best once` |
+| Explicit controls | Desktop defaults to `off`; `auto`, `save`, `quality`, and `Best once` are opt-in |
 | Server authority | Client sends an opaque target ID; Gateway resolves provider/model/effort |
 | Durable admission | SQLite lease ledger with reserved/accepted/completed states and conflict detection |
 | Fail-open UX | Capability and policy/catalog mismatch warn and bypass; the Router never swallows the user's message |
@@ -120,7 +120,7 @@ python integrations/hermes/scripts/install.py install \
   --full-verify
 ```
 
-For the tested Windows unpacked Desktop release, fully exit Hermes and add `--deploy-desktop`. Restart Hermes after installation, then choose `auto` beside the composer.
+For the tested Windows unpacked Desktop release, fully exit Hermes and add `--deploy-desktop`. New installs start at `OFF · NATIVE`, preserving Hermes' native model, reasoning and Fast-output controls. Choose `auto` beside the composer only when you want per-turn routing.
 
 The complete procedure—including prerequisites, target catalog, packaged deployment, verification, and rollback—is in [Getting started](docs/getting-started.md).
 
@@ -171,6 +171,8 @@ The Composer control combines color, status dot, text, and tooltip feedback. Mod
 | `Best once` | Arm the unique highest `quality_rank` authorized by Gateway for the next accepted turn; disable rather than guess when rank metadata is absent or ambiguous |
 
 CLI/library users can still specify an explicit `fixed` target. Desktop does not duplicate Hermes' native model picker with a second fixed-mode UI.
+
+`off` is the fresh-install default. A mode explicitly chosen by an existing user remains persisted across plugin updates.
 
 ## Library API
 
@@ -258,7 +260,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md), a
 
 ## Project status
 
-Version `0.5.3` keeps all routine Router feedback inside the Composer and removes persistent dismissible toasts. It retains v0.5.2's Sol Ultra target and explicit Gateway `quality_rank` authority.
+Version `0.5.4` defaults fresh Desktop installs to `OFF · NATIVE`, preserving Hermes' native Fast/model controls until routing is explicitly enabled. It retains v0.5.3's quiet feedback, Sol Ultra target, and explicit Gateway `quality_rank` authority.
 
 This is a community project and is not affiliated with Nous Research.
 

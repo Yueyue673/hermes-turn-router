@@ -371,6 +371,7 @@ function routeMessageSafely(input) {
 
 // src/router-ui.ts
 var ROUTER_CONTROL_MODES = ["auto", "save", "quality", "off"];
+var DEFAULT_ROUTER_MODE = "off";
 var ROUTER_MODE_PRESENTATION = {
   auto: {
     label: "AUTO",
@@ -440,7 +441,7 @@ var MODE_DOT_CLASS = {
   quality: "bg-amber-500",
   off: "bg-muted-foreground/45"
 };
-var $mode = atom("auto");
+var $mode = atom(DEFAULT_ROUTER_MODE);
 var $oneShotArmed = atom(false);
 var $availableTargets = atom([]);
 var $bestTargetId = atom(void 0);
@@ -637,8 +638,8 @@ var plugin = {
   description: "Per-turn model routing with cache-aware policies and Gateway-authorized targets.",
   defaultEnabled: true,
   register(ctx) {
-    const stored = ctx.storage.get("settings", { mode: "auto" });
-    const initialMode = ROUTER_CONTROL_MODES.includes(stored.mode) ? stored.mode : "auto";
+    const stored = ctx.storage.get("settings", { mode: DEFAULT_ROUTER_MODE });
+    const initialMode = ROUTER_CONTROL_MODES.includes(stored.mode) ? stored.mode : DEFAULT_ROUTER_MODE;
     $mode.set(initialMode);
     $lastTarget.set("");
     $visualState.set(initialMode === "off" ? "ready" : "checking");

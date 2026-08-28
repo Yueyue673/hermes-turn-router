@@ -117,11 +117,12 @@ After source or Desktop installation:
 
 1. restart Hermes;
 2. open the Router control beside the composer;
-3. choose `auto`;
-4. confirm the control displays a selected target after the next message;
-5. inspect logs for `turn router applied` or `turn router target already active`.
+3. confirm a fresh install displays `OFF · NATIVE` and Hermes' native model/Fast controls remain authoritative;
+4. choose `auto` only for the routing verification;
+5. confirm the control displays a selected target after the next message;
+6. inspect logs for `turn router applied` or `turn router target already active`, then return to `off` if automatic routing is not wanted.
 
-If capability negotiation fails, version 0.2.2+ fails open: Hermes sends with the current native model and shows `Router bypassed` instead of swallowing the message.
+If capability negotiation fails, version 0.2.2+ fails open: Hermes sends with the current native model and the Composer pill shows `BYPASS` instead of swallowing the message.
 
 ## Roll back
 

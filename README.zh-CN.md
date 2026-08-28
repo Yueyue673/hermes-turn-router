@@ -45,7 +45,7 @@ Hermes Turn Router 把四类本应一起判断的信息放进同一次决策：
 | 本地策略 | 同步 TypeScript 纯函数，不访问网络和文件系统 |
 | 四档 target | 参考策略包含 Luna Medium、Sol Medium、Sol High、Sol Ultra |
 | 缓存稳定 | Auto 在 32K+ 已建立会话中不做边缘性降档 |
-| 明确控制 | Desktop 提供 `auto`、`save`、`quality`、`off` 和 `Best once` |
+| 明确控制 | Desktop 默认 `off`；`auto`、`save`、`quality` 和 `Best once` 均为主动启用 |
 | 服务端授权 | 客户端只提交不透明 target ID，Gateway 解析真实模型 |
 | 持久准入 | SQLite lease ledger，包含 reserved/accepted/completed 与冲突检测 |
 | Fail-open | Capability 或 policy/catalog 不匹配时提示并旁路，绝不吞掉用户消息 |
@@ -120,7 +120,7 @@ python integrations/hermes/scripts/install.py install \
   --full-verify
 ```
 
-安装到已验证的 Windows unpacked Desktop release 时，先彻底退出 Hermes，再追加 `--deploy-desktop`。完成后重启 Hermes，在输入框旁选择 `auto`。
+安装到已验证的 Windows unpacked Desktop release 时，先彻底退出 Hermes，再追加 `--deploy-desktop`。新安装默认显示 `OFF · NATIVE`，保留 Hermes 原生模型、推理档位和 Fast 输出控制；只有需要逐 turn 路由时才在输入框旁选择 `auto`。
 
 前置条件、target catalog、打包部署、验收与回滚见[开始使用](docs/getting-started.md)。
 
@@ -171,6 +171,8 @@ Composer 控件同时使用颜色、状态点、文字和 Tooltip。检查中、
 | `Best once` | 下一条 accepted turn 使用 Gateway 授权的唯一最高 `quality_rank`；rank 缺失或并列时禁用，不再猜测 |
 
 CLI/库仍支持明确的 `fixed` target。Desktop 不再用第二套 fixed UI 重复 Hermes 原生模型选择器。
+
+全新安装默认 `off`。已有用户明确选择过的模式继续持久化，插件更新不会强制覆盖。
 
 ## 代码调用
 
@@ -258,7 +260,7 @@ npm pack --dry-run
 
 ## 项目状态
 
-`0.5.3` 把 Router 的日常反馈全部留在 Composer，移除常驻且需要手动关闭的 Toast。它继续保留 v0.5.2 的 Sol Ultra 与 Gateway 显式 `quality_rank` 权威。
+`0.5.4` 让全新 Desktop 安装默认进入 `OFF · NATIVE`，在主动启用路由前保留 Hermes 原生 Fast/模型控制。它继续保留 v0.5.3 的安静反馈、Sol Ultra 和 Gateway 显式 `quality_rank` 权威。
 
 社区项目，与 Nous Research 无官方隶属关系。
 

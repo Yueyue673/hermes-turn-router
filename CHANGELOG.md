@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.4 - 2026-08-28
+
+- Changed the fresh-install Desktop default from `auto` to `OFF · NATIVE`.
+- Preserved Hermes' native model picker, reasoning effort and Fast-output controls until the user explicitly opts into routing.
+- Kept existing users' explicitly persisted Router mode unchanged across updates; malformed or absent storage now falls back to Off.
+- Exported and tested `DEFAULT_ROUTER_MODE = 'off'` and added a plugin smoke guard for the storage default.
+- Updated onboarding, verification instructions and the control-state diagram to identify Off as the default.
+
 ## 0.5.3 - 2026-08-28
 
 - Removed every routine Router toast: mode changes, Best once armed/cancelled/consumed, capability bypass and policy mismatch no longer create dismissible notifications.

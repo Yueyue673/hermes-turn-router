@@ -5,6 +5,7 @@ export { OneShotController } from './one-shot.js'
 export { HERMES_TURN_TARGET_CAPABILITY, bestCompatibleTargetId, compatibleTargetIds, validateHermesCapabilities } from './capabilities.js'
 export { routeMessageSafely } from './safe-route.js'
 export {
+  DEFAULT_ROUTER_MODE,
   ROUTER_CONTROL_MODES,
   ROUTER_MODE_PRESENTATION,
   compactTargetLabel,

@@ -21,6 +21,7 @@ import { codexLunaSolPolicy } from '../../../src/presets.js'
 import { bestCompatibleTargetId, compatibleTargetIds, requestHermesCapabilities } from '../../../src/capabilities.js'
 import { routeMessageSafely } from '../../../src/safe-route.js'
 import {
+  DEFAULT_ROUTER_MODE,
   ROUTER_CONTROL_MODES,
   ROUTER_MODE_PRESENTATION,
   routerPillText,
@@ -46,7 +47,7 @@ const MODE_DOT_CLASS: Record<RouterControlMode, string> = {
   quality: 'bg-amber-500',
   off: 'bg-muted-foreground/45'
 }
-const $mode = atom<RouterControlMode>('auto')
+const $mode = atom<RouterControlMode>(DEFAULT_ROUTER_MODE)
 const $oneShotArmed = atom(false)
 const $availableTargets = atom<string[]>([])
 const $bestTargetId = atom<string | undefined>(undefined)
@@ -258,10 +259,10 @@ const plugin = {
   description: 'Per-turn model routing with cache-aware policies and Gateway-authorized targets.',
   defaultEnabled: true,
   register(ctx) {
-    const stored = ctx.storage.get('settings', { mode: 'auto' })
+    const stored = ctx.storage.get('settings', { mode: DEFAULT_ROUTER_MODE })
     const initialMode = ROUTER_CONTROL_MODES.includes(stored.mode as RouterControlMode)
       ? stored.mode as RouterControlMode
-      : 'auto'
+      : DEFAULT_ROUTER_MODE
     $mode.set(initialMode)
     $lastTarget.set('')
     $visualState.set(initialMode === 'off' ? 'ready' : 'checking')
