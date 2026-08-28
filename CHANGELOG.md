@@ -5,6 +5,7 @@
 - Replaced regex-based custom target-label normalization with a bounded 256-character single-pass scanner.
 - Added whitespace and oversized-label regression tests.
 - Removes the CodeQL `js/polynomial-redos` high-severity finding introduced by the v0.5.0 UI helper.
+- Rebuilt the README Hero and social preview around the live Composer pill, per-turn trace, cache affinity, and visible fail-open behavior.
 
 ## 0.5.0 - 2026-08-28
 
