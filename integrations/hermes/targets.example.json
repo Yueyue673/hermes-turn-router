@@ -7,6 +7,7 @@
     {
       "id": "fast",
       "label": "Luna · Medium",
+      "quality_rank": 10,
       "provider": "openai-codex",
       "model": "gpt-5.6-luna",
       "reasoning_effort": "medium",
@@ -15,6 +16,7 @@
     {
       "id": "balanced",
       "label": "Sol · Medium",
+      "quality_rank": 20,
       "provider": "openai-codex",
       "model": "gpt-5.6-sol",
       "reasoning_effort": "medium",
@@ -23,6 +25,7 @@
     {
       "id": "strong",
       "label": "Sol · High",
+      "quality_rank": 30,
       "provider": "openai-codex",
       "model": "gpt-5.6-sol",
       "reasoning_effort": "high",
@@ -30,10 +33,11 @@
     },
     {
       "id": "premium",
-      "label": "Sol · XHigh",
+      "label": "Sol · Ultra",
+      "quality_rank": 40,
       "provider": "openai-codex",
       "model": "gpt-5.6-sol",
-      "reasoning_effort": "xhigh",
+      "reasoning_effort": "ultra",
       "cost_class": "premium"
     }
   ]

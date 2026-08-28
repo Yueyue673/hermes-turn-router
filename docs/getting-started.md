@@ -70,7 +70,7 @@ The reference catalog uses:
 | `fast` | `openai-codex` | `gpt-5.6-luna` | `medium` |
 | `balanced` | `openai-codex` | `gpt-5.6-sol` | `medium` |
 | `strong` | `openai-codex` | `gpt-5.6-sol` | `high` |
-| `premium` | `openai-codex` | `gpt-5.6-sol` | `xhigh` |
+| `premium` | `openai-codex` | `gpt-5.6-sol` | `ultra` |
 
 ## 5. Preflight the Hermes integration
 

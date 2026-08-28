@@ -35,7 +35,7 @@ export function compactTargetLabel(label: string): string {
     'Luna · Medium': 'LUNA M',
     'Sol · Medium': 'SOL M',
     'Sol · High': 'SOL H',
-    'Sol · XHigh': 'SOL XH'
+    'Sol · Ultra': 'SOL ULTRA'
   }
   if (known[label]) return known[label]
   const words: string[] = []

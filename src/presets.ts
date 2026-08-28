@@ -6,7 +6,7 @@ export const codexLunaSolPolicy: RouterPolicy = {
     { id: 'fast', label: 'Luna · Medium', provider: 'openai-codex', model: 'gpt-5.6-luna', reasoningEffort: 'medium', minScore: -100 },
     { id: 'balanced', label: 'Sol · Medium', provider: 'openai-codex', model: 'gpt-5.6-sol', reasoningEffort: 'medium', minScore: 25 },
     { id: 'strong', label: 'Sol · High', provider: 'openai-codex', model: 'gpt-5.6-sol', reasoningEffort: 'high', minScore: 60 },
-    { id: 'premium', label: 'Sol · XHigh', provider: 'openai-codex', model: 'gpt-5.6-sol', reasoningEffort: 'xhigh', minScore: 90 }
+    { id: 'premium', label: 'Sol · Ultra', provider: 'openai-codex', model: 'gpt-5.6-sol', reasoningEffort: 'ultra', minScore: 90 }
   ],
   signals: [
     {

@@ -7,6 +7,7 @@
     {
       "id": "fast",
       "label": "Local fast model",
+      "quality_rank": 10,
       "provider": "local-provider",
       "model": "local-fast-model",
       "cost_class": "free"
@@ -14,6 +15,7 @@
     {
       "id": "balanced",
       "label": "Cloud balanced model",
+      "quality_rank": 20,
       "provider": "cloud-provider-a",
       "model": "cloud-balanced-model",
       "reasoning_effort": "medium",
@@ -22,6 +24,7 @@
     {
       "id": "strong",
       "label": "Cloud strong model",
+      "quality_rank": 30,
       "provider": "cloud-provider-b",
       "model": "cloud-strong-model",
       "reasoning_effort": "high",

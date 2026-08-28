@@ -5,7 +5,7 @@
     {"id":"fast","label":"Luna · Medium","provider":"openai-codex","model":"gpt-5.6-luna","reasoningEffort":"medium","minScore":-100},
     {"id":"balanced","label":"Sol · Medium","provider":"openai-codex","model":"gpt-5.6-sol","reasoningEffort":"medium","minScore":25},
     {"id":"strong","label":"Sol · High","provider":"openai-codex","model":"gpt-5.6-sol","reasoningEffort":"high","minScore":60},
-    {"id":"premium","label":"Sol · XHigh","provider":"openai-codex","model":"gpt-5.6-sol","reasoningEffort":"xhigh","minScore":90}
+    {"id":"premium","label":"Sol · Ultra","provider":"openai-codex","model":"gpt-5.6-sol","reasoningEffort":"ultra","minScore":90}
   ],
   "signals": [
     {"id":"explicit-quality","reasonCode":"explicit_quality","pattern":"(认真|仔细|深入|深度|想清楚|高质量|最好(?:的)?模型|最强|不要敷衍|strict(?:ly)? review|think\\s+carefully|high[ -]?quality|best\\s+model)","weight":90,"forceUpgrade":true},

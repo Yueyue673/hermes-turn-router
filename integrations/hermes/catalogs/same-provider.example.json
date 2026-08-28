@@ -7,6 +7,7 @@
     {
       "id": "fast",
       "label": "Fast · low effort",
+      "quality_rank": 10,
       "provider": "your-provider",
       "model": "your-fast-model",
       "reasoning_effort": "low",
@@ -15,6 +16,7 @@
     {
       "id": "balanced",
       "label": "Balanced · medium effort",
+      "quality_rank": 20,
       "provider": "your-provider",
       "model": "your-balanced-model",
       "reasoning_effort": "medium",
@@ -23,6 +25,7 @@
     {
       "id": "strong",
       "label": "Strong · high effort",
+      "quality_rank": 30,
       "provider": "your-provider",
       "model": "your-strong-model",
       "reasoning_effort": "high",
@@ -31,6 +34,7 @@
     {
       "id": "premium",
       "label": "Premium · maximum effort",
+      "quality_rank": 40,
       "provider": "your-provider",
       "model": "your-premium-model",
       "reasoning_effort": "max",

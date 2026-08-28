@@ -2,7 +2,7 @@ export { routeMessage, validatePolicy } from './router.js'
 export { replayPolicy } from './replay.js'
 export { codexLunaSolPolicy } from './presets.js'
 export { OneShotController } from './one-shot.js'
-export { HERMES_TURN_TARGET_CAPABILITY, compatibleTargetIds, validateHermesCapabilities } from './capabilities.js'
+export { HERMES_TURN_TARGET_CAPABILITY, bestCompatibleTargetId, compatibleTargetIds, validateHermesCapabilities } from './capabilities.js'
 export { routeMessageSafely } from './safe-route.js'
 export {
   ROUTER_CONTROL_MODES,

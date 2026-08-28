@@ -26,6 +26,7 @@ def validate_catalog(path: str | Path) -> dict:
             {
                 "id": target["id"],
                 "label": target["label"],
+                **({"quality_rank": target["quality_rank"]} if "quality_rank" in target else {}),
                 "cost_class": target["cost_class"],
                 "requires_approval": target["requires_approval"],
             }

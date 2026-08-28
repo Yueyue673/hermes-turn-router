@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.2 - 2026-08-28
+
+- Corrected the Codex reference premium target from Sol XHigh to the actually higher supported Sol Ultra effort.
+- Added explicit, unique Gateway `quality_rank` metadata to reference and generic catalogs.
+- Changed Best once to select the highest authorized compatible rank rather than infer quality from policy order, catalog order, cost class, or the `premium` ID.
+- Disabled Best once when rank metadata is absent or tied instead of guessing.
+- Added rank validation, public capability projection, validator output, shuffled-order selection tests, missing/tied-rank tests, and patched Hermes Gateway coverage.
+- Updated the Composer labels, generated demo, README, provider guide, Hero, control-state diagram, and social preview from Sol XHigh to Sol Ultra.
+
 ## 0.5.1 - 2026-08-28
 
 - Replaced regex-based custom target-label normalization with a bounded 256-character single-pass scanner.

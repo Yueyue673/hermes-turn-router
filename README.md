@@ -43,7 +43,7 @@ The incident below came from a real 691-message session. A simple explanatory tu
 | Layer | Behavior |
 |---|---|
 | Local policy | Synchronous TypeScript decision; no network or filesystem side effects |
-| Four target tiers | Luna Medium, Sol Medium, Sol High, Sol XHigh in the reference policy |
+| Four target tiers | Luna Medium, Sol Medium, Sol High, Sol Ultra in the reference policy |
 | Cache stability | Auto mode holds established targets for 32K+ contexts instead of marginal downgrades |
 | Explicit controls | Desktop `auto`, `save`, `quality`, `off`, plus `Best once` |
 | Server authority | Client sends an opaque target ID; Gateway resolves provider/model/effort |
@@ -147,7 +147,7 @@ The bundled preset is an example, not a hard-coded provider dependency:
 | `fast` | Luna · Medium | `<25` | clear, low-risk, verifiable turns |
 | `balanced` | Sol · Medium | `25–59` | analysis, code, multi-step execution |
 | `strong` | Sol · High | `60–89` | higher-impact synthesis and review |
-| `premium` | Sol · XHigh | `90+` | explicit quality, architecture, adversarial final review |
+| `premium` | Sol · Ultra | `90+` | explicit quality, architecture, adversarial final review |
 
 Targets are declared twice for separate trust roles:
 
@@ -168,7 +168,7 @@ The Composer control combines color, status dot, text, tooltip, and toast feedba
 | `save` | Apply a lower-cost bias directly while retaining the safety floor |
 | `quality` | Apply a stronger-target bias directly |
 | `off` | Leave selection to Hermes' native model picker—the fixed-model workflow |
-| `Best once` | Arm the highest currently compatible target for the next accepted turn; show and notify when armed, cancelled, and consumed |
+| `Best once` | Arm the unique highest `quality_rank` authorized by Gateway for the next accepted turn; disable rather than guess when rank metadata is absent or ambiguous |
 
 CLI/library users can still specify an explicit `fixed` target. Desktop does not duplicate Hermes' native model picker with a second fixed-mode UI.
 
@@ -258,7 +258,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md), a
 
 ## Project status
 
-Version `0.5.1` provides the perceptible Composer controls from v0.5.0 and replaces custom target-label regex normalization with a bounded linear scanner after CodeQL review. It retains v0.4.1's fail-open behavior for cost-capped, unknown-only, empty, and incompatible policy/catalog combinations.
+Version `0.5.2` corrects the reference highest target to Sol Ultra and makes Best once depend on explicit Gateway `quality_rank`, never target names or array order. It retains the perceptible controls, bounded label scanner, and fail-open behavior from earlier v0.5 releases.
 
 This is a community project and is not affiliated with Nous Research.
 

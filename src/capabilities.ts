@@ -5,6 +5,8 @@ export const HERMES_TURN_TARGET_CAPABILITY = 'composer.turn-target.v1'
 export interface PublicRoutingTarget {
   id: string
   label: string
+  /** Gateway-authorized quality order. Missing means Best once is unavailable. */
+  quality_rank?: number
   cost_class: 'free' | 'low' | 'standard' | 'premium'
   enabled: boolean
   requires_approval: boolean
@@ -34,6 +36,20 @@ export function compatibleTargetIds(
     .map(target => target.id)
 }
 
+export function bestCompatibleTargetId(
+  capabilities: HermesRoutingCapabilities,
+  policy: RouterPolicy
+): string | undefined {
+  const compatibleIds = new Set(compatibleTargetIds(capabilities, policy))
+  const ranked = capabilities.targets.filter(target =>
+    compatibleIds.has(target.id) && Number.isInteger(target.quality_rank)
+  )
+  if (!ranked.length) return undefined
+  const highest = Math.max(...ranked.map(target => target.quality_rank as number))
+  const winners = ranked.filter(target => target.quality_rank === highest)
+  return winners.length === 1 ? winners[0]?.id : undefined
+}
+
 const TARGET_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/
 const COST_CLASSES = new Set(['free', 'low', 'standard', 'premium'])
 
@@ -59,6 +75,11 @@ export function validateHermesCapabilities(value: unknown): HermesRoutingCapabil
       || ids.has(target.id)
       || typeof target.label !== 'string'
       || target.label.length > 128
+      || (target.quality_rank !== undefined && (
+        !Number.isInteger(target.quality_rank)
+        || target.quality_rank < 0
+        || target.quality_rank > 1_000_000
+      ))
       || !COST_CLASSES.has(String(target.cost_class))
       || typeof target.enabled !== 'boolean'
       || typeof target.requires_approval !== 'boolean'

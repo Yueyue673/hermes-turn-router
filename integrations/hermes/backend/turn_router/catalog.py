@@ -32,12 +32,22 @@ def _strict_bool(data: dict[str, Any], key: str, default: bool) -> bool:
     return value
 
 
+def _strict_optional_rank(data: dict[str, Any]) -> int | None:
+    if "quality_rank" not in data:
+        return None
+    value = data["quality_rank"]
+    if type(value) is not int or value < 0 or value > 1_000_000:
+        raise CatalogError("catalog_invalid", "quality_rank must be an integer between 0 and 1000000")
+    return value
+
+
 @dataclass(frozen=True)
 class TargetSpec:
     id: str
     label: str
     provider: str
     model: str
+    quality_rank: int | None
     reasoning_effort: str | None
     cost_class: str
     enabled: bool
@@ -47,6 +57,7 @@ class TargetSpec:
         return {
             "id": self.id,
             "label": self.label,
+            **({"quality_rank": self.quality_rank} if self.quality_rank is not None else {}),
             "cost_class": self.cost_class,
             "enabled": self.enabled,
             "requires_approval": self.requires_approval,
@@ -124,6 +135,7 @@ class TargetCatalog:
         if max_cost_class not in _COST_RANK:
             raise CatalogError("catalog_invalid", f"unknown max cost class: {max_cost_class}")
         by_id: dict[str, TargetSpec] = {}
+        quality_ranks: set[int] = set()
         if len(targets) > 64:
             raise CatalogError("catalog_invalid", "target catalog exceeds 64 entries")
         for target in targets:
@@ -139,6 +151,10 @@ class TargetCatalog:
                 raise CatalogError("catalog_invalid", f"provider/model token is invalid for {target.id}")
             if target.reasoning_effort and target.reasoning_effort not in _REASONING_LEVELS:
                 raise CatalogError("catalog_invalid", f"reasoning effort is invalid for {target.id}")
+            if target.quality_rank is not None:
+                if target.quality_rank in quality_ranks:
+                    raise CatalogError("catalog_invalid", f"duplicate quality_rank: {target.quality_rank}")
+                quality_ranks.add(target.quality_rank)
             by_id[target.id] = target
         if not by_id:
             raise CatalogError("catalog_invalid", "at least one target is required")
@@ -163,6 +179,7 @@ class TargetCatalog:
                     label=str(raw.get("label") or raw.get("id") or ""),
                     provider=str(raw.get("provider") or ""),
                     model=str(raw.get("model") or ""),
+                    quality_rank=_strict_optional_rank(raw),
                     reasoning_effort=(str(raw["reasoning_effort"]) if raw.get("reasoning_effort") else None),
                     cost_class=str(raw.get("cost_class") or "standard"),
                     enabled=_strict_bool(raw, "enabled", True),

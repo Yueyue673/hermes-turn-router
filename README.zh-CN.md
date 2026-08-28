@@ -43,7 +43,7 @@ Hermes Turn Router 把四类本应一起判断的信息放进同一次决策：
 | 层 | 行为 |
 |---|---|
 | 本地策略 | 同步 TypeScript 纯函数，不访问网络和文件系统 |
-| 四档 target | 参考策略包含 Luna Medium、Sol Medium、Sol High、Sol XHigh |
+| 四档 target | 参考策略包含 Luna Medium、Sol Medium、Sol High、Sol Ultra |
 | 缓存稳定 | Auto 在 32K+ 已建立会话中不做边缘性降档 |
 | 明确控制 | Desktop 提供 `auto`、`save`、`quality`、`off` 和 `Best once` |
 | 服务端授权 | 客户端只提交不透明 target ID，Gateway 解析真实模型 |
@@ -147,7 +147,7 @@ python integrations/hermes/scripts/install.py install \
 | `fast` | Luna · Medium | `<25` | 明确、低风险、可验证的 turn |
 | `balanced` | Sol · Medium | `25–59` | 分析、代码、多步执行 |
 | `strong` | Sol · High | `60–89` | 高影响综合与审查 |
-| `premium` | Sol · XHigh | `90+` | 明确高质量、架构、最终对抗审查 |
+| `premium` | Sol · Ultra | `90+` | 明确高质量、架构、最终对抗审查 |
 
 Target 在两个地方声明，各自承担不同信任角色：
 
@@ -168,7 +168,7 @@ Composer 控件同时使用颜色、状态点、文字、Tooltip 和 Toast。检
 | `save` | 明确应用低成本倾向，但保留安全下限 |
 | `quality` | 明确应用强模型倾向 |
 | `off` | 交给 Hermes 原生模型选择器，也就是固定模型工作流 |
-| `Best once` | 下一条 accepted turn 使用当前兼容集合中的最高档，并在武装、取消、消费时显示反馈 |
+| `Best once` | 下一条 accepted turn 使用 Gateway 授权的唯一最高 `quality_rank`；rank 缺失或并列时禁用，不再猜测 |
 
 CLI/库仍支持明确的 `fixed` target。Desktop 不再用第二套 fixed UI 重复 Hermes 原生模型选择器。
 
@@ -258,7 +258,7 @@ npm pack --dry-run
 
 ## 项目状态
 
-`0.5.1` 保留 v0.5.0 的可感知 Composer 控件，并在 CodeQL 审查后把自定义 target 标签的正则归一化替换成有界线性扫描。它继续保留 v0.4.1 对 cost cap、unknown-only、空集合和不兼容 policy/catalog 的 fail-open 保护。
+`0.5.2` 把参考最高档修正为 Sol Ultra，并让 Best once 只依赖 Gateway 显式 `quality_rank`，不再看 target 名字或数组顺序。它继续保留 v0.5 的可感知控件、有界标签扫描和 fail-open 保护。
 
 社区项目，与 Nous Research 无官方隶属关系。
 

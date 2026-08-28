@@ -91,6 +91,15 @@ python integrations/hermes/scripts/validate_catalog.py C:/path/to/targets.json
 
 Catalog validation output intentionally omits provider/model values. The Desktop capability uses the same public projection.
 
+Assign every target a unique integer `quality_rank` when `Best once` should be available:
+
+```json
+{"id": "fast", "quality_rank": 10, "provider": "your-provider", "model": "your-fast-model"}
+{"id": "premium", "quality_rank": 40, "provider": "your-provider", "model": "your-best-model"}
+```
+
+Gateway exposes this rank without exposing provider/model credentials. Desktop selects the unique highest authorized, enabled, pre-approved rank that also exists in the local policy. If rank metadata is missing or tied, `Best once` is disabled instead of inferring quality from target IDs, catalog order, cost class, or policy order.
+
 The catalog schema is available at:
 
 ```text

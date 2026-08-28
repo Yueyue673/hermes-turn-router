@@ -10,8 +10,8 @@ def catalog(**overrides):
         "max_cost_class": "premium",
         "allow_cross_provider": True,
         "targets": [
-            {"id": "fast", "label": "Fast", "provider": "p1", "model": "m1", "cost_class": "low"},
-            {"id": "premium", "label": "Premium", "provider": "p2", "model": "m2", "reasoning_effort": "high", "cost_class": "premium", "requires_approval": True},
+            {"id": "fast", "label": "Fast", "quality_rank": 10, "provider": "p1", "model": "m1", "cost_class": "low"},
+            {"id": "premium", "label": "Premium", "quality_rank": 40, "provider": "p2", "model": "m2", "reasoning_effort": "high", "cost_class": "premium", "requires_approval": True},
         ],
     }
     data.update(overrides)
@@ -24,6 +24,7 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(payload["capability"], "composer.turn-target.v1")
         self.assertNotIn("provider", payload["targets"][0])
         self.assertNotIn("model", payload["targets"][0])
+        self.assertEqual(payload["targets"][0]["quality_rank"], 10)
 
     def test_cost_cross_provider_and_approval_are_server_authorized(self):
         limited = catalog(max_cost_class="standard")
@@ -60,6 +61,22 @@ class CatalogTests(unittest.TestCase):
                 "targets": [{
                     "id": "bad", "provider": "p --base-url", "model": "m", "reasoning_effort": "extreme"
                 }],
+            })
+
+    def test_catalog_rejects_invalid_or_duplicate_quality_ranks(self):
+        for rank in (True, -1, 1_000_001, "40"):
+            with self.subTest(rank=rank), self.assertRaises(CatalogError):
+                TargetCatalog.from_dict({
+                    "schema_version": 1,
+                    "targets": [{"id": "fast", "provider": "p", "model": "m", "quality_rank": rank}],
+                })
+        with self.assertRaisesRegex(CatalogError, "duplicate quality_rank"):
+            TargetCatalog.from_dict({
+                "schema_version": 1,
+                "targets": [
+                    {"id": "fast", "provider": "p", "model": "m1", "quality_rank": 40},
+                    {"id": "best", "provider": "p", "model": "m2", "quality_rank": 40},
+                ],
             })
 
     def test_approval_tokens_are_bound_and_expire(self):

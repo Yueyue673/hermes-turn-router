@@ -66,7 +66,7 @@ var codexLunaSolPolicy = {
     { id: "fast", label: "Luna \xB7 Medium", provider: "openai-codex", model: "gpt-5.6-luna", reasoningEffort: "medium", minScore: -100 },
     { id: "balanced", label: "Sol \xB7 Medium", provider: "openai-codex", model: "gpt-5.6-sol", reasoningEffort: "medium", minScore: 25 },
     { id: "strong", label: "Sol \xB7 High", provider: "openai-codex", model: "gpt-5.6-sol", reasoningEffort: "high", minScore: 60 },
-    { id: "premium", label: "Sol \xB7 XHigh", provider: "openai-codex", model: "gpt-5.6-sol", reasoningEffort: "xhigh", minScore: 90 }
+    { id: "premium", label: "Sol \xB7 Ultra", provider: "openai-codex", model: "gpt-5.6-sol", reasoningEffort: "ultra", minScore: 90 }
   ],
   signals: [
     {
@@ -128,6 +128,16 @@ function compatibleTargetIds(capabilities, policy) {
   const policyIds = new Set(policy.tiers.map((target) => target.id));
   return capabilities.targets.filter((target) => target.enabled && !target.requires_approval && policyIds.has(target.id)).map((target) => target.id);
 }
+function bestCompatibleTargetId(capabilities, policy) {
+  const compatibleIds = new Set(compatibleTargetIds(capabilities, policy));
+  const ranked = capabilities.targets.filter(
+    (target) => compatibleIds.has(target.id) && Number.isInteger(target.quality_rank)
+  );
+  if (!ranked.length) return void 0;
+  const highest = Math.max(...ranked.map((target) => target.quality_rank));
+  const winners = ranked.filter((target) => target.quality_rank === highest);
+  return winners.length === 1 ? winners[0]?.id : void 0;
+}
 var TARGET_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/;
 var COST_CLASSES = /* @__PURE__ */ new Set(["free", "low", "standard", "premium"]);
 function validateHermesCapabilities(value) {
@@ -145,7 +155,7 @@ function validateHermesCapabilities(value) {
   }
   const ids = /* @__PURE__ */ new Set();
   for (const target of data.targets) {
-    if (!target || typeof target.id !== "string" || !TARGET_ID.test(target.id) || ids.has(target.id) || typeof target.label !== "string" || target.label.length > 128 || !COST_CLASSES.has(String(target.cost_class)) || typeof target.enabled !== "boolean" || typeof target.requires_approval !== "boolean") {
+    if (!target || typeof target.id !== "string" || !TARGET_ID.test(target.id) || ids.has(target.id) || typeof target.label !== "string" || target.label.length > 128 || target.quality_rank !== void 0 && (!Number.isInteger(target.quality_rank) || target.quality_rank < 0 || target.quality_rank > 1e6) || !COST_CLASSES.has(String(target.cost_class)) || typeof target.enabled !== "boolean" || typeof target.requires_approval !== "boolean") {
       throw new Error("Hermes Gateway returned invalid routing targets");
     }
     ids.add(target.id);
@@ -388,7 +398,7 @@ function compactTargetLabel(label) {
     "Luna \xB7 Medium": "LUNA M",
     "Sol \xB7 Medium": "SOL M",
     "Sol \xB7 High": "SOL H",
-    "Sol \xB7 XHigh": "SOL XH"
+    "Sol \xB7 Ultra": "SOL ULTRA"
   };
   if (known[label]) return known[label];
   const words = [];
@@ -433,6 +443,7 @@ var MODE_DOT_CLASS = {
 var $mode = atom("auto");
 var $oneShotArmed = atom(false);
 var $availableTargets = atom([]);
+var $bestTargetId = atom(void 0);
 var $status = atom("Checking Gateway capability\u2026");
 var $lastTarget = atom("");
 var $visualState = atom("checking");
@@ -453,6 +464,7 @@ async function refreshCapabilities(attempts = 12) {
       );
       const compatibleTargets = compatibleTargetIds(response, desktopPolicy);
       $availableTargets.set(compatibleTargets);
+      $bestTargetId.set(bestCompatibleTargetId(response, desktopPolicy));
       if (host.state.gateway.get() !== "open") {
         $visualState.set("offline");
         $status.set("Gateway offline \xB7 native Hermes send remains available");
@@ -466,6 +478,7 @@ async function refreshCapabilities(attempts = 12) {
       return compatibleTargets.length > 0;
     } catch (error) {
       $availableTargets.set([]);
+      $bestTargetId.set(void 0);
       if ($mode.get() === "off") {
         $visualState.set("ready");
         $status.set(ROUTER_MODE_PRESENTATION.off.description);
@@ -509,13 +522,13 @@ function RouterControls() {
   const status = useValue($status);
   const lastTarget = useValue($lastTarget);
   const availableTargets = useValue($availableTargets);
+  const bestTargetId = useValue($bestTargetId);
   const gateway = useValue(host.state.gateway);
   const storedVisualState = useValue($visualState);
   const visualState = mode === "off" ? "ready" : storedVisualState;
   const presentation = ROUTER_MODE_PRESENTATION[mode];
   const tone = routerStatusTone(mode, visualState);
   const pillText = routerPillText(mode, visualState, lastTarget);
-  const bestTargetId = [...desktopPolicy.tiers].reverse().find((target) => availableTargets.includes(target.id))?.id;
   const stateClass = visualState === "bypass" ? "border-amber-500/45 bg-amber-500/12 text-amber-800 hover:bg-amber-500/18 dark:text-amber-300" : visualState === "offline" ? "border-destructive/45 bg-destructive/10 text-destructive hover:bg-destructive/15" : visualState === "checking" || visualState === "routing" ? "border-amber-500/35 bg-amber-500/8 text-amber-800 hover:bg-amber-500/14 dark:text-amber-300" : presentation.className;
   return jsxs("div", {
     className: "flex items-center gap-1.5",
@@ -672,6 +685,7 @@ var plugin = {
         }
       } else {
         $availableTargets.set([]);
+        $bestTargetId.set(void 0);
         if ($mode.get() !== "off") {
           $visualState.set("offline");
           $status.set("Gateway offline \xB7 native Hermes send remains available");

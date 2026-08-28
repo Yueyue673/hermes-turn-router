@@ -34,6 +34,12 @@
           "pattern": "^[A-Za-z0-9._:-]+$"
         },
         "label": {"type": "string", "maxLength": 128},
+        "quality_rank": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000,
+          "description": "Explicit Gateway-authorized quality order used by Best once. Omit to disable Best once for this target."
+        },
         "provider": {
           "type": "string",
           "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/+\\-]{0,255}$"

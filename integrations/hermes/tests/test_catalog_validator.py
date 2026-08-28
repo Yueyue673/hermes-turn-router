@@ -17,6 +17,7 @@ class CatalogValidatorTests(unittest.TestCase):
             result = validate_catalog(path)
             self.assertTrue(result["ok"])
             self.assertGreater(len(result["targets"]), 0)
+            self.assertIn("quality_rank", result["targets"][0])
             self.assertNotIn("provider", result["targets"][0])
             self.assertNotIn("model", result["targets"][0])
 

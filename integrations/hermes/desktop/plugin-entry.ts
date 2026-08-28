@@ -18,7 +18,7 @@ import { jsx, jsxs } from 'react/jsx-runtime'
 
 import { OneShotController } from '../../../src/one-shot.js'
 import { codexLunaSolPolicy } from '../../../src/presets.js'
-import { compatibleTargetIds, requestHermesCapabilities } from '../../../src/capabilities.js'
+import { bestCompatibleTargetId, compatibleTargetIds, requestHermesCapabilities } from '../../../src/capabilities.js'
 import { routeMessageSafely } from '../../../src/safe-route.js'
 import {
   ROUTER_CONTROL_MODES,
@@ -49,6 +49,7 @@ const MODE_DOT_CLASS: Record<RouterControlMode, string> = {
 const $mode = atom<RouterControlMode>('auto')
 const $oneShotArmed = atom(false)
 const $availableTargets = atom<string[]>([])
+const $bestTargetId = atom<string | undefined>(undefined)
 const $status = atom('Checking Gateway capability…')
 const $lastTarget = atom('')
 const $visualState = atom<RouterVisualState>('checking')
@@ -71,6 +72,7 @@ async function refreshCapabilities(attempts = 12): Promise<boolean> {
       )
       const compatibleTargets = compatibleTargetIds(response, desktopPolicy)
       $availableTargets.set(compatibleTargets)
+      $bestTargetId.set(bestCompatibleTargetId(response, desktopPolicy))
       if (host.state.gateway.get() !== 'open') {
         $visualState.set('offline')
         $status.set('Gateway offline · native Hermes send remains available')
@@ -84,6 +86,7 @@ async function refreshCapabilities(attempts = 12): Promise<boolean> {
       return compatibleTargets.length > 0
     } catch (error) {
       $availableTargets.set([])
+      $bestTargetId.set(undefined)
       if ($mode.get() === 'off') {
         $visualState.set('ready')
         $status.set(ROUTER_MODE_PRESENTATION.off.description)
@@ -129,15 +132,13 @@ function RouterControls() {
   const status = useValue($status)
   const lastTarget = useValue($lastTarget)
   const availableTargets = useValue($availableTargets)
+  const bestTargetId = useValue($bestTargetId)
   const gateway = useValue(host.state.gateway)
   const storedVisualState = useValue($visualState)
   const visualState = mode === 'off' ? 'ready' : storedVisualState
   const presentation = ROUTER_MODE_PRESENTATION[mode]
   const tone = routerStatusTone(mode, visualState)
   const pillText = routerPillText(mode, visualState, lastTarget)
-  const bestTargetId = [...desktopPolicy.tiers]
-    .reverse()
-    .find(target => availableTargets.includes(target.id))?.id
   const stateClass = visualState === 'bypass'
     ? 'border-amber-500/45 bg-amber-500/12 text-amber-800 hover:bg-amber-500/18 dark:text-amber-300'
     : visualState === 'offline'
@@ -311,6 +312,7 @@ const plugin = {
         }
       } else {
         $availableTargets.set([])
+        $bestTargetId.set(undefined)
         if ($mode.get() !== 'off') {
           $visualState.set('offline')
           $status.set('Gateway offline · native Hermes send remains available')
