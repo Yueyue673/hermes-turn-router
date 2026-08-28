@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="430" viewBox="0 0 1200 430" role="img" aria-labelledby="title desc">
+<title id="title">Hermes Turn Router control states</title>
+<desc id="desc">Colored mode pills for auto, save, quality, off, bypass, and Best once armed</desc>
+<rect width="1200" height="430" fill="#111214"/>
+<g font-family="Inter,Arial,sans-serif">
+  <line x1="48" y1="42" x2="1152" y2="42" stroke="#55585f" stroke-width="1"/>
+  <text x="48" y="76" font-size="14" font-weight="700" fill="#f4f1ea">DESKTOP CONTROL / PERCEPTIBLE STATE</text>
+  <text x="1152" y="76" text-anchor="end" font-size="14" font-weight="700" fill="#8d9199">V0.5</text>
+
+  <text x="48" y="132" font-size="12" font-weight="700" fill="#8d9199">ROUTING MODES</text>
+  <g transform="translate(48 154)">
+    <rect width="210" height="44" rx="6" fill="#18213a" stroke="#637dff" stroke-opacity=".7"/>
+    <circle cx="22" cy="22" r="5" fill="#8296ff"/>
+    <text x="38" y="28" font-size="15" font-weight="800" fill="#aebaff">AUTO · SOL H</text>
+  </g>
+  <g transform="translate(278 154)">
+    <rect width="220" height="44" rx="6" fill="#10251f" stroke="#2fc58e" stroke-opacity=".7"/>
+    <circle cx="22" cy="22" r="5" fill="#36d399"/>
+    <text x="38" y="28" font-size="15" font-weight="800" fill="#75e4bd">SAVE · LUNA M</text>
+  </g>
+  <g transform="translate(518 154)">
+    <rect width="246" height="44" rx="6" fill="#2a2110" stroke="#eab54a" stroke-opacity=".75"/>
+    <circle cx="22" cy="22" r="5" fill="#f6bd4e"/>
+    <text x="38" y="28" font-size="15" font-weight="800" fill="#f5c96c">QUALITY · SOL XH</text>
+  </g>
+  <g transform="translate(784 154)">
+    <rect width="210" height="44" rx="6" fill="#1b1c1f" stroke="#55585f"/>
+    <circle cx="22" cy="22" r="5" fill="#6f737b"/>
+    <text x="38" y="28" font-size="15" font-weight="800" fill="#a2a5ab">OFF · NATIVE</text>
+  </g>
+
+  <text x="48" y="256" font-size="12" font-weight="700" fill="#8d9199">LIFECYCLE AND OVERRIDE</text>
+  <g transform="translate(48 278)">
+    <rect width="230" height="44" rx="6" fill="#2a2110" stroke="#eab54a" stroke-opacity=".7"/>
+    <circle cx="22" cy="22" r="5" fill="#f6bd4e"/>
+    <text x="38" y="28" font-size="15" font-weight="800" fill="#f5c96c">AUTO · CHECKING</text>
+  </g>
+  <g transform="translate(298 278)">
+    <rect width="220" height="44" rx="6" fill="#2a2110" stroke="#eab54a" stroke-opacity=".7"/>
+    <circle cx="22" cy="22" r="5" fill="#f6bd4e"/>
+    <text x="38" y="28" font-size="15" font-weight="800" fill="#f5c96c">AUTO · BYPASS</text>
+  </g>
+  <g transform="translate(538 278)">
+    <rect width="218" height="44" rx="6" fill="#2a2110" stroke="#eab54a" stroke-opacity=".75"/>
+    <circle cx="22" cy="22" r="5" fill="#f6bd4e"/>
+    <text x="38" y="28" font-size="15" font-weight="800" fill="#f5c96c">BEST · ARMED</text>
+  </g>
+  <g transform="translate(776 278)">
+    <rect width="208" height="44" rx="6" fill="#281518" stroke="#e0525c" stroke-opacity=".75"/>
+    <circle cx="22" cy="22" r="5" fill="#ee6670"/>
+    <text x="38" y="28" font-size="15" font-weight="800" fill="#f08088">AUTO · OFFLINE</text>
+  </g>
+
+  <line x1="48" y1="374" x2="1152" y2="374" stroke="#55585f" stroke-width="1"/>
+  <text x="48" y="405" font-size="12" fill="#8d9199">COLOR + DOT + TEXT + TOOLTIP + TOAST · NO STATE RELIES ON COLOR ALONE</text>
+</g>
+</svg>

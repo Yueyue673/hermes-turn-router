@@ -8,7 +8,10 @@ for (const marker of [
   'Best once',
   'Router bypassed',
   'Policy mismatch',
-  'targets compatible'
+  'targets compatible',
+  'CHECKING',
+  'BEST \\xB7 ARMED',
+  'native Hermes send'
 ]) {
   if (!plugin.includes(marker)) throw new Error(`Desktop plugin is missing marker: ${marker}`)
 }

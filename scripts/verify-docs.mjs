@@ -38,7 +38,7 @@ for (const file of await markdownFiles(root)) {
 if (missing.length) throw new Error(`Broken relative links:\n${missing.join('\n')}`)
 if (replacement.length) throw new Error(`Unicode replacement characters in:\n${replacement.join('\n')}`)
 
-for (const name of ['hero.svg', 'architecture.svg', 'decision-demo.svg', 'reference-evaluation.svg', 'social-preview.svg']) {
+for (const name of ['hero.svg', 'architecture.svg', 'control-states.svg', 'decision-demo.svg', 'reference-evaluation.svg', 'social-preview.svg']) {
   const metadata = await sharp(join(root, 'assets', name)).metadata()
   if (!metadata.width || !metadata.height) throw new Error(`Unreadable asset: ${name}`)
 }

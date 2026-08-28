@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.0 - 2026-08-28
+
+- Replaced the low-contrast ghost Router control with a bordered status pill that combines mode color, status dot, explicit text, tooltip, and accessible label.
+- Added visible `CHECKING`, `ROUTING`, selected-target, `BYPASS`, `OFFLINE`, and `OFF · NATIVE` lifecycle states.
+- Added distinct Auto, Save, Quality, and Off presentations with mode descriptions in the dropdown.
+- Kept the mode selector available while Gateway is offline so users can still choose native-off behavior.
+- Made Best once a separate perceptible control with `BEST · ARMED`, pulsing status, tooltip, and toast feedback when armed, cancelled, and consumed.
+- Added mode-switch toast feedback and an `aria-live` pill label; no state relies on color alone.
+- Added provider-agnostic Router UI presentation helpers and four behavior tests.
+- Added a GitHub control-state diagram and updated English/Chinese Desktop mode documentation.
+- Hot-loaded and visually verified the control in the real Hermes Composer.
+
 ## 0.4.1 - 2026-08-25
 
 - Filtered targets above the Gateway `max_cost_class` out of capability responses while retaining server-side resolution checks.

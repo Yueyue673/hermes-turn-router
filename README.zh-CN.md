@@ -158,13 +158,17 @@ Target 在两个地方声明，各自承担不同信任角色：
 
 ## Desktop 模式
 
+![可感知的 Router 控件状态](assets/control-states.svg)
+
+Composer 控件同时使用颜色、状态点、文字、Tooltip 和 Toast。检查中、路由中、旁路、离线、原生关闭、已选 target 和 one-shot 已武装都有明确文字，不依赖颜色单独传达状态。
+
 | 控件 | 含义 |
 |---|---|
 | `auto` | 每条重新评估，同时考虑安全、当前 target、上下文规模和缓存成本 |
 | `save` | 明确应用低成本倾向，但保留安全下限 |
 | `quality` | 明确应用强模型倾向 |
 | `off` | 交给 Hermes 原生模型选择器，也就是固定模型工作流 |
-| `Best once` | 下一条 accepted turn 使用 `premium`，之后恢复原模式 |
+| `Best once` | 下一条 accepted turn 使用当前兼容集合中的最高档，并在武装、取消、消费时显示反馈 |
 
 CLI/库仍支持明确的 `fixed` target。Desktop 不再用第二套 fixed UI 重复 Hermes 原生模型选择器。
 
@@ -254,7 +258,7 @@ npm pack --dry-run
 
 ## 项目状态
 
-`0.4.1` 把 fail-open 扩展到 cost cap、unknown-only、空集合和不兼容 policy/catalog。它继续包含 v0.4.0 的自动分类评估、编译 preset 修复、“代码 + 附件”边界，以及经过验证的自定义 Provider Desktop 构建入口。
+`0.5.0` 让 Router 状态在 Composer 中直接可感知：彩色模式 pill、生命周期文字、target 标签、离线/旁路状态、无障碍播报，以及明确的 Best once 反馈。它继续保留 v0.4.1 对 cost cap、unknown-only、空集合和不兼容 policy/catalog 的 fail-open 保护。
 
 社区项目，与 Nous Research 无官方隶属关系。
 

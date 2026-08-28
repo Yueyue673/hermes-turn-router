@@ -158,13 +158,17 @@ Keep IDs aligned. The Gateway never trusts provider/model strings from Desktop.
 
 ## Desktop modes
 
+![Perceptible Router control states](assets/control-states.svg)
+
+The Composer control combines color, status dot, text, tooltip, and toast feedback. Mode and lifecycle are always named explicitly, so checking, routing, bypass, offline, native-off, selected target, and one-shot armed states do not rely on color alone.
+
 | Control | Meaning |
 |---|---|
 | `auto` | Re-evaluate each turn with safety, active target, context size, and cache cost |
 | `save` | Apply a lower-cost bias directly while retaining the safety floor |
 | `quality` | Apply a stronger-target bias directly |
 | `off` | Leave selection to Hermes' native model picker—the fixed-model workflow |
-| `Best once` | Use `premium` for the next accepted turn, then restore the prior mode |
+| `Best once` | Arm the highest currently compatible target for the next accepted turn; show and notify when armed, cancelled, and consumed |
 
 CLI/library users can still specify an explicit `fixed` target. Desktop does not duplicate Hermes' native model picker with a second fixed-mode UI.
 
@@ -254,7 +258,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md), a
 
 ## Project status
 
-Version `0.4.1` extends fail-open behavior to cost-capped, unknown-only, empty, and incompatible policy/catalog combinations. It builds on v0.4.0's generated category-level evaluation, compiled preset fixes, code-attachment boundary, and validated custom-provider Desktop build path.
+Version `0.5.0` makes Router state directly perceptible in the Composer: colored mode pills, lifecycle text, target labels, offline/bypass status, accessible announcements, and explicit Best once feedback. It retains v0.4.1's fail-open behavior for cost-capped, unknown-only, empty, and incompatible policy/catalog combinations.
 
 This is a community project and is not affiliated with Nous Research.
 
