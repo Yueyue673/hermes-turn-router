@@ -16,27 +16,27 @@ const base = {
 }
 const scenarios = [
   {
-    step: '01 / SIMPLE TURN',
+    step: '01 · 简单请求',
     message: '你好',
-    context: 'NEW SESSION · BASE SOL MEDIUM',
+    context: '新会话 · 当前 Sol Medium',
     decision: routeMessage({ text: '你好', mode: 'auto', policy: codexLunaSolPolicy, state: base })
   },
   {
-    step: '02 / TECHNICAL TURN',
+    step: '02 · 技术问题',
     message: 'Analyze the root cause of this TypeScript API error',
-    context: '8K CONTEXT · BASE SOL MEDIUM',
+    context: '8k context · 当前 Sol Medium',
     decision: routeMessage({ text: 'Analyze the root cause of this TypeScript API error', mode: 'auto', policy: codexLunaSolPolicy, state: base, estimatedContextTokens: 8000 })
   },
   {
-    step: '03 / EXPLICIT QUALITY',
+    step: '03 · 明确要求更好的模型',
     message: 'Use the best model for the final architecture review',
-    context: '16K CONTEXT · BASE SOL MEDIUM',
+    context: '16k context · 当前 Sol Medium',
     decision: routeMessage({ text: 'Use the best model for the final architecture review', mode: 'auto', policy: codexLunaSolPolicy, state: base, estimatedContextTokens: 16000 })
   },
   {
-    step: '04 / CACHE AFFINITY',
+    step: '04 · 长上下文',
     message: '把这个标题改短一点',
-    context: '360K CONTEXT · CURRENT SOL HIGH',
+    context: '36 万 token · 当前 Sol High',
     decision: routeMessage({
       text: '把这个标题改短一点',
       mode: 'auto',
@@ -48,18 +48,19 @@ const scenarios = [
 ]
 
 const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[char]))
-const colors = { fast: '#7a756d', balanced: '#171717', strong: '#0e7c66', premium: '#ff4d00' }
+const colors = { fast: '#8fa396', balanced: '#244536', strong: '#315e4b', premium: '#b79b4e' }
+const face = `Inter, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'WenQuanYi Micro Hei', sans-serif`
 
-function shell(inner, footer = 'DETERMINISTIC LOCAL REPLAY · NO CLASSIFIER REQUEST') {
+function shell(inner, footer = '本地回放 · 不发送分类请求') {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-  <rect width="1200" height="675" fill="#f4f1ea"/>
-  <g font-family="Arial,Helvetica,sans-serif" fill="#171717">
-    <line x1="48" y1="40" x2="1152" y2="40" stroke="#171717" stroke-width="2"/>
-    <text x="48" y="75" font-size="15" font-weight="700">HERMES TURN ROUTER / AUTO</text>
-    <text x="1152" y="75" text-anchor="end" font-size="15" font-weight="700">TURN BOUNDARY DEMO</text>
+  <rect width="1200" height="675" fill="#f7f5ec"/>
+  <g font-family="${face}" fill="#244536">
+    <line x1="48" y1="40" x2="1152" y2="40" stroke="#ccd7c6"/>
+    <text x="48" y="76" font-size="15" font-weight="600">Hermes Turn Router · auto</text>
+    <text x="1152" y="76" text-anchor="end" font-size="13" fill="#617768">逐轮边界</text>
     ${inner}
-    <line x1="48" y1="618" x2="1152" y2="618" stroke="#171717" stroke-width="2"/>
-    <text x="48" y="650" font-size="13">${footer}</text>
+    <line x1="48" y1="618" x2="1152" y2="618" stroke="#ccd7c6"/>
+    <text x="48" y="652" font-size="13" fill="#617768">${footer}</text>
   </g>
 </svg>`
 }
@@ -67,13 +68,11 @@ function shell(inner, footer = 'DETERMINISTIC LOCAL REPLAY · NO CLASSIFIER REQU
 const frames = [
   {
     delay: 1300,
-    svg: shell(`<text x="48" y="208" font-size="70" font-weight="800" letter-spacing="-3">ONE SESSION.</text>
-    <text x="48" y="282" font-size="70" font-weight="800" letter-spacing="-3">FOUR TARGETS.</text>
-    <text x="48" y="356" font-size="70" font-weight="800" letter-spacing="-3">ONE MODEL PER TURN.</text>
-    <rect x="52" y="408" width="16" height="16" fill="#ff4d00"/>
-    <text x="84" y="423" font-size="18" font-weight="700">AUTO RE-EVALUATES AT EACH USER MESSAGE</text>
-    <text x="48" y="502" font-size="22">Queue and retry keep the selected target immutable.</text>
-    <text x="48" y="536" font-size="22">Generation never switches model halfway through a response.</text>`)
+    svg: shell(`<text x="48" y="210" font-size="40" font-weight="600">同一会话，四次选择</text>
+    <text x="48" y="268" font-size="40" font-weight="600">每一轮只用一个模型</text>
+    <text x="48" y="340" font-size="18" fill="#617768">自动模式在每条用户消息上重新评估。</text>
+    <text x="48" y="378" font-size="18" fill="#617768">队列和重试会守住已经选好的 target。</text>
+    <text x="48" y="416" font-size="18" fill="#617768">生成回答的过程中不会中途换模型。</text>`)
   },
   ...scenarios.map(({ step, message, context, decision }, index) => {
     const target = decision.target
@@ -83,32 +82,34 @@ const frames = [
     const cache = decision.cacheRisk.toUpperCase()
     return {
       delay: index === scenarios.length - 1 ? 2100 : 1700,
-      svg: shell(`<text x="48" y="130" font-size="14" font-weight="700">${escape(step)}</text>
-      <rect x="48" y="158" width="690" height="145" fill="#ebe7de" stroke="#171717" stroke-width="1.5"/>
-      <text x="70" y="193" font-size="12" font-weight="700">USER MESSAGE</text>
-      <text x="70" y="244" font-size="26" font-weight="800">${escape(message)}</text>
-      <text x="70" y="281" font-size="13">${escape(context)}</text>
-      <rect x="770" y="158" width="382" height="145" fill="${color}" stroke="#171717" stroke-width="1.5"/>
-      <text x="792" y="193" font-size="12" font-weight="700" fill="#fff">SELECTED TARGET</text>
-      <text x="792" y="242" font-size="31" font-weight="800" fill="#fff">${escape(target.label)}</text>
-      <text x="792" y="278" font-size="13" fill="#fff">SCORE ${score} · ${decision.switched ? 'SWITCH' : 'NO SWITCH'}</text>
-      <text x="48" y="365" font-size="13" font-weight="700">DECISION TRACE</text>
-      <line x1="48" y1="383" x2="1152" y2="383" stroke="#171717"/>
-      <text x="48" y="426" font-size="16">RAW TARGET</text><text x="270" y="426" font-size="18" font-weight="800">${escape(decision.rawTierId)}</text>
-      <text x="48" y="470" font-size="16">REASON</text><text x="270" y="470" font-size="18" font-weight="800">${escape(reasons)}</text>
-      <text x="48" y="514" font-size="16">CACHE RISK</text><text x="270" y="514" font-size="18" font-weight="800">${cache}</text>
-      <text x="48" y="558" font-size="16">LIFECYCLE</text><text x="270" y="558" font-size="18" font-weight="800">RESERVED → ACCEPTED → COMPLETED</text>`)
+      svg: shell(`<text x="48" y="128" font-size="14" font-weight="600">${escape(step)}</text>
+      <rect x="48" y="150" width="700" height="150" fill="#fffefa" stroke="#ccd7c6"/>
+      <text x="72" y="184" font-size="12" fill="#617768">用户消息</text>
+      <text x="72" y="226" font-size="22" font-weight="600">${escape(message)}</text>
+      <text x="72" y="268" font-size="14" fill="#617768">${escape(context)}</text>
+      <rect x="772" y="150" width="380" height="150" fill="#fffefa" stroke="#ccd7c6"/>
+      <rect x="772" y="150" width="4" height="150" fill="${color}"/>
+      <text x="796" y="184" font-size="12" fill="#617768">选中的 target</text>
+      <text x="796" y="226" font-size="24" font-weight="600">${escape(target.label)}</text>
+      <text x="796" y="268" font-size="14" fill="#617768">score ${score} · ${decision.switched ? 'switch' : 'no switch'}</text>
+      <text x="48" y="348" font-size="13" font-weight="600">决策记录</text>
+      <line x1="48" y1="366" x2="1152" y2="366" stroke="#ccd7c6"/>
+      <text x="48" y="412" font-size="15" fill="#617768">raw target</text><text x="220" y="412" font-size="16" font-weight="600">${escape(decision.rawTierId)}</text>
+      <text x="48" y="458" font-size="15" fill="#617768">reason</text><text x="220" y="458" font-size="16" font-weight="600">${escape(reasons)}</text>
+      <text x="48" y="504" font-size="15" fill="#617768">cache risk</text><text x="220" y="504" font-size="16" font-weight="600">${cache.toLowerCase()}</text>
+      <text x="48" y="550" font-size="15" fill="#617768">lifecycle</text><text x="220" y="550" font-size="16" font-weight="600">reserved → accepted → completed</text>`)
     }
   }),
   {
     delay: 1900,
-    svg: shell(`<text x="48" y="136" font-size="14" font-weight="700">05 / FAILURE BOUNDARY</text>
-    <text x="48" y="228" font-size="58" font-weight="800" letter-spacing="-2">GATEWAY CAPABILITY</text>
-    <text x="48" y="292" font-size="58" font-weight="800" letter-spacing="-2">UNAVAILABLE.</text>
-    <rect x="48" y="342" width="1104" height="90" fill="#0e7c66" stroke="#171717" stroke-width="1.5"/>
-    <text x="72" y="398" font-size="28" font-weight="800" fill="#fff">ROUTER BYPASSED → NATIVE HERMES SEND CONTINUES</text>
-    <text x="48" y="492" font-size="18">Bounded retry first. Visible bypass second. The message is never swallowed.</text>
-    <text x="48" y="535" font-size="18">Verified by capability retry tests and compiled-plugin smoke checks.</text>`, 'FAIL-OPEN SENDS · ROUTER IS AN ENHANCEMENT, NOT A SINGLE POINT OF FAILURE')
+    svg: shell(`<text x="48" y="132" font-size="14" font-weight="600">05 · 失败边界</text>
+    <text x="48" y="210" font-size="36" font-weight="600">Gateway 暂时没有给出可用能力</text>
+    <rect x="48" y="250" width="1104" height="96" fill="#fffefa" stroke="#ccd7c6"/>
+    <rect x="48" y="250" width="4" height="96" fill="#315e4b"/>
+    <text x="72" y="292" font-size="20" font-weight="600">路由旁路。Hermes 仍按原来的方式发送。</text>
+    <text x="72" y="322" font-size="15" fill="#617768">router bypassed · native send continues</text>
+    <text x="48" y="404" font-size="18" fill="#617768">先做有限次重试，再走看得见的旁路。这条消息不会被吞掉。</text>
+    <text x="48" y="444" font-size="16" fill="#617768">能力重试测试和编译后的插件检查都覆盖了这条边界。</text>`, '失败时放行 · 路由器是增强，不是唯一出路')
   }
 ]
 

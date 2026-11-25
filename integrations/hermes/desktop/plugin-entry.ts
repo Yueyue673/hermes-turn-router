@@ -135,13 +135,9 @@ function RouterControls() {
   const presentation = ROUTER_MODE_PRESENTATION[mode]
   const tone = routerStatusTone(mode, visualState)
   const pillText = routerPillText(mode, visualState, lastTarget)
-  const stateClass = visualState === 'bypass'
-    ? 'border-amber-500/45 bg-amber-500/12 text-amber-800 hover:bg-amber-500/18 dark:text-amber-300'
-    : visualState === 'offline'
-      ? 'border-destructive/45 bg-destructive/10 text-destructive hover:bg-destructive/15'
-      : visualState === 'checking' || visualState === 'routing'
-        ? 'border-amber-500/35 bg-amber-500/8 text-amber-800 hover:bg-amber-500/14 dark:text-amber-300'
-        : presentation.className
+  const stateClass = visualState === 'offline'
+    ? 'border-destructive/45 bg-muted/25 text-destructive hover:bg-muted/40'
+    : presentation.className
   return jsxs('div', {
     className: 'flex items-center gap-1.5',
     children: [
@@ -156,7 +152,7 @@ function RouterControls() {
                 children: jsxs(Button, {
                   'aria-label': `Hermes Turn Router: ${pillText}. ${status}`,
                   className: cn(
-                    'h-6 gap-1.5 rounded-[4px] px-2 font-semibold tracking-[0.035em] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]',
+                    'h-6 gap-1.5 rounded-[2px] px-2 font-medium tracking-normal',
                     stateClass
                   ),
                   size: 'xs',
@@ -165,7 +161,11 @@ function RouterControls() {
                   children: [
                     jsx(StatusDot, {
                       className: cn(
-                        MODE_DOT_CLASS[mode],
+                        visualState === 'checking' || visualState === 'routing' || visualState === 'bypass'
+                          ? 'bg-amber-500'
+                          : visualState === 'offline'
+                            ? ''
+                            : MODE_DOT_CLASS[mode],
                         (visualState === 'checking' || visualState === 'routing') && 'animate-pulse'
                       ),
                       tone
@@ -221,9 +221,9 @@ function RouterControls() {
         children: jsxs(Button, {
           'aria-label': oneShotArmed ? 'Cancel Best once' : 'Arm Best once',
           className: cn(
-            'h-6 rounded-[4px] px-2 font-semibold tracking-[0.035em]',
+            'h-6 rounded-[2px] px-2 font-medium tracking-normal',
             oneShotArmed
-              ? 'border-amber-500/45 bg-amber-500/12 text-amber-800 hover:bg-amber-500/18 dark:text-amber-300'
+              ? 'border-border/60 bg-muted/25 text-muted-foreground hover:bg-muted/40'
               : 'border-border/55 bg-background/35 text-muted-foreground hover:bg-accent/55 hover:text-foreground'
           ),
           disabled: gateway !== 'open' || mode === 'off' || !bestTargetId,
@@ -242,7 +242,7 @@ function RouterControls() {
           variant: 'outline',
           children: [
             jsx(StatusDot, {
-              className: oneShotArmed ? 'animate-pulse bg-amber-500' : 'bg-muted-foreground/40',
+              className: oneShotArmed ? 'animate-pulse bg-primary' : 'bg-muted-foreground/40',
               tone: oneShotArmed ? 'warn' : 'muted'
             }),
             oneShotArmed ? 'BEST · ARMED' : 'BEST ONCE'
