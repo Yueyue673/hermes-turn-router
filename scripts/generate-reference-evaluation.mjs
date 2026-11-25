@@ -85,28 +85,28 @@ npm run evaluate:reference
 CI runs the generator in \`--check\` mode and fails when policy behavior changes without an updated report. A threshold change must therefore update tests, fixtures, and this generated evidence in the same commit.
 `
 
-const colors = { fast: '#7a756d', balanced: '#171717', strong: '#0e7c66', premium: '#ff4d00' }
+const colors = { fast: '#8fa396', balanced: '#244536', strong: '#315e4b', premium: '#b79b4e' }
 const targets = ['fast', 'balanced', 'strong', 'premium']
 const max = Math.max(...targets.map(name => summary.byTarget[name] ?? 0), 1)
 const bars = targets.map((name, index) => {
   const value = summary.byTarget[name] ?? 0
   const width = Math.round(690 * value / max)
   const y = 190 + index * 82
-  return `  <text x="70" y="${y + 26}" font-size="16" font-weight="700">${name.toUpperCase()}</text>\n  <rect x="210" y="${y}" width="${width}" height="38" fill="${colors[name]}"/>\n  <text x="${Math.max(230 + width, 930)}" y="${y + 26}" font-size="18" font-weight="800">${value}</text>`
+  return `  <text x="70" y="${y + 22}" font-size="15" font-weight="600">${name}</text>\n  <rect x="210" y="${y}" width="${width}" height="32" fill="${colors[name]}"/>\n  <text x="${Math.max(230 + width, 930)}" y="${y + 22}" font-size="16" font-weight="600">${value}</text>`
 }).join('\n')
 const chart = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600" role="img" aria-labelledby="title desc">
 <title id="title">Reference policy target distribution</title>
 <desc id="desc">${summary.routedEvents} routed fixtures across fast, balanced, strong, and premium targets</desc>
-<rect width="1200" height="600" fill="#f4f1ea"/>
-<g font-family="Inter,Arial,sans-serif" fill="#171717">
-  <line x1="52" y1="42" x2="1148" y2="42" stroke="#171717" stroke-width="2"/>
-  <text x="52" y="78" font-size="15" font-weight="700">REFERENCE POLICY / GENERATED EVIDENCE</text>
-  <text x="1148" y="78" text-anchor="end" font-size="15" font-weight="700">FIXTURE ${fixtureHash}</text>
-  <text x="52" y="135" font-size="34" font-weight="800">TARGET DISTRIBUTION</text>
+<rect width="1200" height="600" fill="#f7f5ec"/>
+<g font-family="Inter, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'WenQuanYi Micro Hei', sans-serif" fill="#244536">
+  <line x1="52" y1="42" x2="1148" y2="42" stroke="#ccd7c6"/>
+  <text x="52" y="78" font-size="14" font-weight="600">参考策略 · 生成的对照</text>
+  <text x="1148" y="78" text-anchor="end" font-size="13" fill="#617768">fixture ${fixtureHash}</text>
+  <text x="52" y="128" font-size="28" font-weight="600">Target distribution</text>
 ${bars}
-  <line x1="52" y1="535" x2="1148" y2="535" stroke="#171717" stroke-width="2"/>
-  <text x="52" y="568" font-size="13">${summary.expectationMatches}/${summary.expectationChecks} EXPECTED DECISIONS MATCHED</text>
-  <text x="1148" y="568" text-anchor="end" font-size="13">BEHAVIOR CONTRACT · NOT A MODEL BENCHMARK</text>
+  <line x1="52" y1="535" x2="1148" y2="535" stroke="#ccd7c6"/>
+  <text x="52" y="568" font-size="13" fill="#617768">${summary.expectationMatches}/${summary.expectationChecks} 条期望决策一致</text>
+  <text x="1148" y="568" text-anchor="end" font-size="13" fill="#617768">行为约定 · 不是模型基准</text>
 </g>
 </svg>
 `

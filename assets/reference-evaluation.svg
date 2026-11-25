@@ -1,26 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600" role="img" aria-labelledby="title desc">
 <title id="title">Reference policy target distribution</title>
 <desc id="desc">31 routed fixtures across fast, balanced, strong, and premium targets</desc>
-<rect width="1200" height="600" fill="#f4f1ea"/>
-<g font-family="Inter,Arial,sans-serif" fill="#171717">
-  <line x1="52" y1="42" x2="1148" y2="42" stroke="#171717" stroke-width="2"/>
-  <text x="52" y="78" font-size="15" font-weight="700">REFERENCE POLICY / GENERATED EVIDENCE</text>
-  <text x="1148" y="78" text-anchor="end" font-size="15" font-weight="700">FIXTURE d8fe33e1c0c0</text>
-  <text x="52" y="135" font-size="34" font-weight="800">TARGET DISTRIBUTION</text>
-  <text x="70" y="216" font-size="16" font-weight="700">FAST</text>
-  <rect x="210" y="190" width="345" height="38" fill="#7a756d"/>
-  <text x="930" y="216" font-size="18" font-weight="800">8</text>
-  <text x="70" y="298" font-size="16" font-weight="700">BALANCED</text>
-  <rect x="210" y="272" width="690" height="38" fill="#171717"/>
-  <text x="930" y="298" font-size="18" font-weight="800">16</text>
-  <text x="70" y="380" font-size="16" font-weight="700">STRONG</text>
-  <rect x="210" y="354" width="173" height="38" fill="#0e7c66"/>
-  <text x="930" y="380" font-size="18" font-weight="800">4</text>
-  <text x="70" y="462" font-size="16" font-weight="700">PREMIUM</text>
-  <rect x="210" y="436" width="129" height="38" fill="#ff4d00"/>
-  <text x="930" y="462" font-size="18" font-weight="800">3</text>
-  <line x1="52" y1="535" x2="1148" y2="535" stroke="#171717" stroke-width="2"/>
-  <text x="52" y="568" font-size="13">31/31 EXPECTED DECISIONS MATCHED</text>
-  <text x="1148" y="568" text-anchor="end" font-size="13">BEHAVIOR CONTRACT · NOT A MODEL BENCHMARK</text>
+<rect width="1200" height="600" fill="#f7f5ec"/>
+<g font-family="Inter, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'WenQuanYi Micro Hei', sans-serif" fill="#244536">
+  <line x1="52" y1="42" x2="1148" y2="42" stroke="#ccd7c6"/>
+  <text x="52" y="78" font-size="14" font-weight="600">参考策略 · 生成的对照</text>
+  <text x="1148" y="78" text-anchor="end" font-size="13" fill="#617768">fixture d8fe33e1c0c0</text>
+  <text x="52" y="128" font-size="28" font-weight="600">Target distribution</text>
+  <text x="70" y="212" font-size="15" font-weight="600">fast</text>
+  <rect x="210" y="190" width="345" height="32" fill="#8fa396"/>
+  <text x="930" y="212" font-size="16" font-weight="600">8</text>
+  <text x="70" y="294" font-size="15" font-weight="600">balanced</text>
+  <rect x="210" y="272" width="690" height="32" fill="#244536"/>
+  <text x="930" y="294" font-size="16" font-weight="600">16</text>
+  <text x="70" y="376" font-size="15" font-weight="600">strong</text>
+  <rect x="210" y="354" width="173" height="32" fill="#315e4b"/>
+  <text x="930" y="376" font-size="16" font-weight="600">4</text>
+  <text x="70" y="458" font-size="15" font-weight="600">premium</text>
+  <rect x="210" y="436" width="129" height="32" fill="#b79b4e"/>
+  <text x="930" y="458" font-size="16" font-weight="600">3</text>
+  <line x1="52" y1="535" x2="1148" y2="535" stroke="#ccd7c6"/>
+  <text x="52" y="568" font-size="13" fill="#617768">31/31 条期望决策一致</text>
+  <text x="1148" y="568" text-anchor="end" font-size="13" fill="#617768">行为约定 · 不是模型基准</text>
 </g>
 </svg>

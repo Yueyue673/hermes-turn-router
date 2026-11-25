@@ -1,88 +1,90 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760" role="img" aria-labelledby="title desc">
 <title id="title">Hermes Turn Router architecture</title>
-<desc id="desc">Desktop local policy submits a target ID to a server-authorized Gateway with a durable SQLite ledger</desc>
+<desc id="desc">Desktop 只提交 target id。Gateway 授权。SQLite 账本决定这一轮能不能跑。</desc>
 <defs>
-  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0l10 5-10 5z" fill="#171717"/></marker>
-  <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0l10 5-10 5z" fill="#ff4d00"/></marker>
+  <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0l10 5-10 5z" fill="#244536"/></marker>
+  <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0l10 5-10 5z" fill="#315e4b"/></marker>
 </defs>
-<rect width="1400" height="760" fill="#f4f1ea"/>
-<g font-family="Inter,Arial,sans-serif" fill="#171717">
-  <line x1="50" y1="42" x2="1350" y2="42" stroke="#171717" stroke-width="2"/>
-  <text x="50" y="76" font-size="15" font-weight="700">ARCHITECTURE / TRUST BOUNDARIES</text>
-  <text x="1350" y="76" text-anchor="end" font-size="15" font-weight="700">COMPOSER.TURN-TARGET.V1</text>
+<rect width="1400" height="760" fill="#f7f5ec"/>
+<g font-family="Inter, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'WenQuanYi Micro Hei', sans-serif" fill="#244536">
+  <line x1="50" y1="42" x2="1350" y2="42" stroke="#ccd7c6"/>
+  <text x="50" y="76" font-size="15" font-weight="600">架构 · 信任边界</text>
+  <text x="1350" y="76" text-anchor="end" font-size="13" fill="#617768">composer.turn-target.v1</text>
 
-  <rect x="50" y="112" width="390" height="470" fill="none" stroke="#171717" stroke-width="1.5" stroke-dasharray="8 6"/>
-  <rect x="475" y="112" width="600" height="470" fill="none" stroke="#171717" stroke-width="1.5" stroke-dasharray="8 6"/>
-  <rect x="1110" y="112" width="240" height="470" fill="none" stroke="#171717" stroke-width="1.5" stroke-dasharray="8 6"/>
-  <text x="68" y="142" font-size="12" font-weight="700">DESKTOP / UNTRUSTED INTENT</text>
-  <text x="493" y="142" font-size="12" font-weight="700">GATEWAY / AUTHORITY</text>
-  <text x="1128" y="142" font-size="12" font-weight="700">MODEL RUNTIME</text>
+  <rect x="50" y="112" width="390" height="470" fill="none" stroke="#ccd7c6" stroke-dasharray="4 5"/>
+  <rect x="475" y="112" width="600" height="470" fill="none" stroke="#ccd7c6" stroke-dasharray="4 5"/>
+  <rect x="1110" y="112" width="240" height="470" fill="none" stroke="#ccd7c6" stroke-dasharray="4 5"/>
+  <text x="68" y="142" font-size="12" font-weight="600" fill="#617768">DESKTOP · 未授权的意图</text>
+  <text x="493" y="142" font-size="12" font-weight="600" fill="#617768">GATEWAY · 授权</text>
+  <text x="1128" y="142" font-size="12" font-weight="600" fill="#617768">RUNTIME · 执行</text>
 
-  <line x1="230" y1="248" x2="230" y2="314" stroke="#171717" stroke-width="2" marker-end="url(#arrow)"/>
-  <line x1="230" y1="396" x2="545" y2="396" stroke="#ff4d00" stroke-width="3" marker-end="url(#arrow-orange)"/>
-  <line x1="705" y1="248" x2="705" y2="315" stroke="#171717" stroke-width="2" marker-end="url(#arrow)"/>
-  <line x1="705" y1="396" x2="705" y2="472" stroke="#171717" stroke-width="2" marker-end="url(#arrow)"/>
-  <line x1="865" y1="513" x2="1168" y2="513" stroke="#171717" stroke-width="2" marker-end="url(#arrow)"/>
-  <line x1="1230" y1="479" x2="1230" y2="274" stroke="#171717" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="230" y1="248" x2="230" y2="314" stroke="#244536" stroke-width="1.25" marker-end="url(#arrow)"/>
+  <line x1="230" y1="396" x2="545" y2="396" stroke="#315e4b" stroke-width="1.5" marker-end="url(#arrow-green)"/>
+  <line x1="705" y1="248" x2="705" y2="315" stroke="#244536" stroke-width="1.25" marker-end="url(#arrow)"/>
+  <line x1="705" y1="396" x2="705" y2="472" stroke="#244536" stroke-width="1.25" marker-end="url(#arrow)"/>
+  <line x1="865" y1="513" x2="1168" y2="513" stroke="#244536" stroke-width="1.25" marker-end="url(#arrow)"/>
+  <line x1="1230" y1="479" x2="1230" y2="274" stroke="#244536" stroke-width="1.25" marker-end="url(#arrow)"/>
 
   <g transform="translate(90 176)">
-    <rect width="280" height="72" fill="#ebe7de" stroke="#171717" stroke-width="1.5"/>
-    <text x="18" y="28" font-size="12" font-weight="700">01 / COMPOSER</text>
-    <text x="18" y="54" font-size="20" font-weight="800">MESSAGE + CONTEXT</text>
+    <rect width="280" height="72" fill="#fffefa" stroke="#ccd7c6"/>
+    <text x="18" y="28" font-size="12" fill="#617768">01 · Composer</text>
+    <text x="18" y="52" font-size="16" font-weight="600">message + context</text>
   </g>
   <g transform="translate(90 315)">
-    <rect width="280" height="82" fill="#ff4d00" stroke="#171717" stroke-width="1.5"/>
-    <text x="18" y="29" font-size="12" font-weight="700" fill="#fff">02 / LOCAL POLICY</text>
-    <text x="18" y="57" font-size="20" font-weight="800" fill="#fff">TARGET ID ONLY</text>
+    <rect width="280" height="82" fill="#e7eee4" stroke="#ccd7c6"/>
+    <rect width="4" height="82" fill="#315e4b"/>
+    <text x="18" y="30" font-size="12" fill="#617768">02 · 本地策略</text>
+    <text x="18" y="56" font-size="16" font-weight="600">只交出 target id</text>
   </g>
-  <text x="90" y="436" font-size="12">No provider/model strings</text>
-  <text x="90" y="458" font-size="12">No cloud classifier request</text>
+  <text x="90" y="428" font-size="13" fill="#617768">不带 provider / model 字符串</text>
+  <text x="90" y="450" font-size="13" fill="#617768">不向云端发分类请求</text>
 
   <g transform="translate(545 176)">
-    <rect width="320" height="72" fill="#ebe7de" stroke="#171717" stroke-width="1.5"/>
-    <text x="18" y="28" font-size="12" font-weight="700">03 / CAPABILITY</text>
-    <text x="18" y="54" font-size="20" font-weight="800">ALLOWLIST + COST CEILING</text>
+    <rect width="320" height="72" fill="#fffefa" stroke="#ccd7c6"/>
+    <text x="18" y="28" font-size="12" fill="#617768">03 · capability</text>
+    <text x="18" y="52" font-size="16" font-weight="600">allowlist + cost ceiling</text>
   </g>
   <g transform="translate(545 315)">
-    <rect width="320" height="82" fill="#171717" stroke="#171717" stroke-width="1.5"/>
-    <text x="18" y="29" font-size="12" font-weight="700" fill="#fff">04 / AUTHORIZATION</text>
-    <text x="18" y="57" font-size="20" font-weight="800" fill="#fff">RESOLVE TARGET</text>
+    <rect width="320" height="82" fill="#244536"/>
+    <text x="18" y="30" font-size="12" fill="#d5e0d4">04 · 授权</text>
+    <text x="18" y="56" font-size="16" font-weight="600" fill="#f7f5ec">resolve target</text>
   </g>
   <g transform="translate(545 472)">
-    <rect width="320" height="82" fill="#0e7c66" stroke="#171717" stroke-width="1.5"/>
-    <text x="18" y="29" font-size="12" font-weight="700" fill="#fff">05 / SQLITE LEDGER</text>
-    <text x="18" y="57" font-size="20" font-weight="800" fill="#fff">RESERVED → ACCEPTED</text>
+    <rect width="320" height="82" fill="#dce9cb" stroke="#ccd7c6"/>
+    <text x="18" y="30" font-size="12" fill="#617768">05 · SQLite 账本</text>
+    <text x="18" y="56" font-size="16" font-weight="600">reserved → accepted</text>
   </g>
   <g transform="translate(890 315)">
-    <rect width="150" height="239" fill="#ebe7de" stroke="#171717" stroke-width="1.5"/>
-    <text x="16" y="29" font-size="12" font-weight="700">TURN LEASE</text>
-    <line x1="16" y1="48" x2="134" y2="48" stroke="#171717"/>
-    <text x="16" y="78" font-size="12">profile</text>
-    <text x="16" y="104" font-size="12">lineage</text>
-    <text x="16" y="130" font-size="12">clientTurnId</text>
-    <text x="16" y="156" font-size="12">prompt digest</text>
-    <text x="16" y="182" font-size="12">random lease</text>
-    <text x="16" y="214" font-size="11" font-weight="700">RESTART SAFE</text>
+    <rect width="150" height="239" fill="#fffefa" stroke="#ccd7c6"/>
+    <text x="16" y="28" font-size="12" font-weight="600">turn lease</text>
+    <line x1="16" y1="44" x2="134" y2="44" stroke="#ccd7c6"/>
+    <text x="16" y="72" font-size="13" fill="#617768">profile</text>
+    <text x="16" y="98" font-size="13" fill="#617768">lineage</text>
+    <text x="16" y="124" font-size="13" fill="#617768">clientTurnId</text>
+    <text x="16" y="150" font-size="13" fill="#617768">prompt digest</text>
+    <text x="16" y="176" font-size="13" fill="#617768">random lease</text>
+    <text x="16" y="214" font-size="12" font-weight="600">重启后仍有效</text>
   </g>
 
   <g transform="translate(1168 206)">
-    <rect width="124" height="68" fill="#ebe7de" stroke="#171717" stroke-width="1.5"/>
-    <text x="62" y="29" text-anchor="middle" font-size="12" font-weight="700">RESTORE</text>
-    <text x="62" y="51" text-anchor="middle" font-size="13">base runtime</text>
+    <rect width="140" height="68" fill="#fffefa" stroke="#ccd7c6"/>
+    <text x="70" y="28" text-anchor="middle" font-size="12" fill="#617768">restore</text>
+    <text x="70" y="50" text-anchor="middle" font-size="14" font-weight="600">base runtime</text>
   </g>
   <g transform="translate(1168 479)">
-    <rect width="124" height="68" fill="#ff4d00" stroke="#171717" stroke-width="1.5"/>
-    <text x="62" y="29" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">EXECUTE</text>
-    <text x="62" y="51" text-anchor="middle" font-size="13" fill="#fff">one turn</text>
+    <rect width="140" height="68" fill="#e7eee4" stroke="#ccd7c6"/>
+    <rect width="4" height="68" fill="#315e4b"/>
+    <text x="70" y="28" text-anchor="middle" font-size="12" fill="#617768">execute</text>
+    <text x="70" y="50" text-anchor="middle" font-size="14" font-weight="600">这一轮</text>
   </g>
 
-  <line x1="50" y1="622" x2="1350" y2="622" stroke="#171717" stroke-width="2"/>
-  <text x="50" y="660" font-size="12" font-weight="700">INVARIANTS</text>
-  <text x="170" y="660" font-size="13">PROMPT TEXT NOT STORED</text>
-  <text x="430" y="660" font-size="13">CLIENT OVERRIDES REJECTED</text>
-  <text x="735" y="660" font-size="13">ONE-SHOT CONSUMES ON ACCEPT</text>
-  <text x="1080" y="660" font-size="13">ROUTER FAILS OPEN</text>
-  <line x1="50" y1="704" x2="1350" y2="704" stroke="#171717"/>
-  <text x="50" y="732" font-size="11">Desktop chooses intent. Gateway decides authority. Ledger decides whether a turn may run.</text>
+  <line x1="50" y1="622" x2="1350" y2="622" stroke="#ccd7c6"/>
+  <text x="50" y="658" font-size="12" font-weight="600" fill="#617768">不变量</text>
+  <text x="130" y="658" font-size="13">不保存 prompt 原文</text>
+  <text x="330" y="658" font-size="13">拒绝客户端覆盖</text>
+  <text x="530" y="658" font-size="13">one-shot 在 accept 时消耗</text>
+  <text x="820" y="658" font-size="13">路由器失败时放行</text>
+  <line x1="50" y1="688" x2="1350" y2="688" stroke="#e3ebe0"/>
+  <text x="50" y="722" font-size="13" fill="#617768">Desktop 提出意图。Gateway 决定授权。账本决定这一轮能不能跑。</text>
 </g>
 </svg>

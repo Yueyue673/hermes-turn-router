@@ -1,65 +1,53 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1400" height="620" viewBox="0 0 1400 620" role="img" aria-labelledby="title desc">
 <title id="title">Hermes Turn Router</title>
-<desc id="desc">One conversation routed turn by turn with visible Composer state</desc>
-<rect width="1400" height="620" fill="#111214"/>
-<g font-family="Inter,Arial,sans-serif">
-  <line x1="54" y1="42" x2="1346" y2="42" stroke="#40434a"/>
-  <rect x="56" y="63" width="9" height="9" fill="#8296ff"/><rect x="69" y="63" width="9" height="9" fill="#36d399"/><rect x="82" y="63" width="9" height="9" fill="#f6bd4e"/><rect x="95" y="63" width="9" height="9" fill="#ee6670"/>
-  <text x="120" y="73" font-size="14" font-weight="800" fill="#f4f1ea">HERMES / TURN ROUTER</text>
-  <text x="1344" y="73" text-anchor="end" font-size="13" font-weight="700" fill="#8d9199">PER-TURN · CACHE-AWARE · FAIL-OPEN</text>
+<desc id="desc">同一条对话按轮选择模型。每条消息对应一个已授权的 target，队列、重试和重启都保留这个决定。</desc>
+<rect width="1400" height="620" fill="#f7f5ec"/>
+<g font-family="Inter, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'WenQuanYi Micro Hei', sans-serif" fill="#244536">
+  <line x1="56" y1="40" x2="1344" y2="40" stroke="#ccd7c6"/>
+  <rect x="56" y="58" width="10" height="10" fill="#315e4b"/>
+  <text x="76" y="68" font-size="15" font-weight="600">Hermes Turn Router</text>
+  <text x="1344" y="68" text-anchor="end" font-size="13" fill="#617768">逐轮路由 · 本地策略 · 服务端授权</text>
 
-  <text x="54" y="178" font-size="67" font-weight="800" letter-spacing="-3" fill="#f4f1ea">ONE THREAD.</text>
-  <text x="54" y="248" font-size="67" font-weight="800" letter-spacing="-3" fill="#f4f1ea">RIGHT MODEL,</text>
-  <text x="54" y="318" font-size="67" font-weight="800" letter-spacing="-3" fill="#f4f1ea">TURN BY TURN.</text>
+  <text x="56" y="168" font-size="40" font-weight="600">同一条对话，按轮选模型</text>
+  <text x="56" y="214" font-size="18" fill="#617768">每条消息只得到一个已授权的 target。</text>
+  <text x="56" y="244" font-size="18" fill="#617768">队列、重试和重启都保留这个决定。</text>
 
-  <text x="56" y="376" font-size="16" font-weight="700" fill="#a8abb2">LOCAL POLICY</text>
-  <line x1="56" y1="390" x2="184" y2="390" stroke="#8296ff" stroke-width="3"/>
-  <text x="216" y="376" font-size="16" font-weight="700" fill="#a8abb2">SERVER AUTHORITY</text>
-  <line x1="216" y1="390" x2="384" y2="390" stroke="#36d399" stroke-width="3"/>
-  <text x="416" y="376" font-size="16" font-weight="700" fill="#a8abb2">DURABLE TURN</text>
-  <line x1="416" y1="390" x2="554" y2="390" stroke="#f6bd4e" stroke-width="3"/>
+  <text x="56" y="312" font-size="13" fill="#617768">本地策略</text>
+  <text x="56" y="338" font-size="16" font-weight="600">只提交 target id</text>
+  <text x="248" y="312" font-size="13" fill="#617768">服务端授权</text>
+  <text x="248" y="338" font-size="16" font-weight="600">Gateway 决定能否执行</text>
+  <text x="500" y="312" font-size="13" fill="#617768">这一轮的记录</text>
+  <text x="500" y="338" font-size="16" font-weight="600">SQLite 账本</text>
 
-  <text x="56" y="452" font-size="21" fill="#d6d4cf">Every message gets one authorized target.</text>
-  <text x="56" y="484" font-size="21" fill="#d6d4cf">Queue, retry, and restart keep that decision.</text>
+  <rect x="760" y="112" width="584" height="404" fill="#fffefa" stroke="#ccd7c6"/>
+  <text x="784" y="148" font-size="13" fill="#617768">Composer 里能看见的结果</text>
+  <text x="1320" y="148" text-anchor="end" font-size="13" fill="#617768">一轮一个模型</text>
+  <line x1="784" y1="166" x2="1320" y2="166" stroke="#ccd7c6"/>
 
-  <g transform="translate(716 112)">
-    <rect width="630" height="408" rx="10" fill="#17181b" stroke="#44474e"/>
-    <line x1="0" y1="52" x2="630" y2="52" stroke="#34373d"/>
-    <circle cx="24" cy="26" r="4" fill="#6f737b"/><circle cx="40" cy="26" r="4" fill="#6f737b"/><circle cx="56" cy="26" r="4" fill="#6f737b"/>
-    <text x="82" y="31" font-size="12" font-weight="700" fill="#8d9199">LIVE COMPOSER STATE</text>
-    <text x="606" y="31" text-anchor="end" font-size="12" font-weight="700" fill="#8d9199">ONE MODEL / TURN</text>
+  <text x="784" y="200" font-size="12" fill="#617768">01 · 简单请求 · simple_request</text>
+  <text x="784" y="228" font-size="16" font-weight="600">“Hello”</text>
+  <text x="1320" y="228" text-anchor="end" font-size="15" font-weight="600">Luna · Medium</text>
+  <line x1="784" y1="248" x2="1320" y2="248" stroke="#e3ebe0"/>
 
-    <g transform="translate(20 73)">
-      <rect width="590" height="62" rx="6" fill="#1d1f23"/>
-      <text x="18" y="24" font-size="11" font-weight="700" fill="#71757d">01 · SIMPLE</text>
-      <text x="18" y="46" font-size="16" font-weight="700" fill="#e8e5df">“Hello”</text>
-      <g transform="translate(410 12)"><rect width="162" height="38" rx="6" fill="#18213a" stroke="#637dff"/><circle cx="18" cy="19" r="4" fill="#8296ff"/><text x="31" y="24" font-size="13" font-weight="800" fill="#aebaff">AUTO · LUNA M</text></g>
-    </g>
-    <g transform="translate(20 145)">
-      <rect width="590" height="62" rx="6" fill="#1d1f23"/>
-      <text x="18" y="24" font-size="11" font-weight="700" fill="#71757d">02 · TECHNICAL</text>
-      <text x="18" y="46" font-size="16" font-weight="700" fill="#e8e5df">“Review the API root cause”</text>
-      <g transform="translate(420 12)"><rect width="152" height="38" rx="6" fill="#18213a" stroke="#637dff"/><circle cx="18" cy="19" r="4" fill="#8296ff"/><text x="31" y="24" font-size="13" font-weight="800" fill="#aebaff">AUTO · SOL M</text></g>
-    </g>
-    <g transform="translate(20 217)">
-      <rect width="590" height="62" rx="6" fill="#1d1f23"/>
-      <text x="18" y="24" font-size="11" font-weight="700" fill="#71757d">03 · FINAL REVIEW</text>
-      <text x="18" y="46" font-size="16" font-weight="700" fill="#e8e5df">“Use the best model”</text>
-      <g transform="translate(370 12)"><rect width="202" height="38" rx="6" fill="#2a2110" stroke="#eab54a"/><circle cx="18" cy="19" r="4" fill="#f6bd4e"/><text x="31" y="24" font-size="13" font-weight="800" fill="#f5c96c">QUALITY · SOL ULTRA</text></g>
-    </g>
-    <g transform="translate(20 289)">
-      <rect width="590" height="78" rx="6" fill="#1d1f23"/>
-      <text x="18" y="24" font-size="11" font-weight="700" fill="#71757d">04 · 360K CONTEXT</text>
-      <text x="18" y="49" font-size="16" font-weight="700" fill="#e8e5df">“Shorten this title”</text>
-      <text x="18" y="68" font-size="10" font-weight="700" fill="#36d399">CACHE AFFINITY HELD</text>
-      <g transform="translate(420 20)"><rect width="152" height="38" rx="6" fill="#18213a" stroke="#637dff"/><circle cx="18" cy="19" r="4" fill="#8296ff"/><text x="31" y="24" font-size="13" font-weight="800" fill="#aebaff">AUTO · SOL H</text></g>
-    </g>
-  </g>
+  <text x="784" y="282" font-size="12" fill="#617768">02 · 技术问题 · complex_reasoning</text>
+  <text x="784" y="310" font-size="16" font-weight="600">“Review the API root cause”</text>
+  <text x="1320" y="310" text-anchor="end" font-size="15" font-weight="600">Sol · Medium</text>
+  <line x1="784" y1="330" x2="1320" y2="330" stroke="#e3ebe0"/>
 
-  <line x1="54" y1="560" x2="1346" y2="560" stroke="#40434a"/>
-  <text x="54" y="592" font-size="12" fill="#8d9199">NO CLASSIFIER CALL</text>
-  <text x="242" y="592" font-size="12" fill="#8d9199">NO CLIENT MODEL OVERRIDE</text>
-  <text x="505" y="592" font-size="12" fill="#8d9199">VISIBLE BYPASS</text>
-  <text x="1346" y="592" text-anchor="end" font-size="12" fill="#8d9199">GITHUB.COM/YUEYUE673/HERMES-TURN-ROUTER</text>
+  <text x="784" y="364" font-size="12" fill="#617768">03 · 明确要求更好的模型 · explicit_quality</text>
+  <text x="784" y="392" font-size="16" font-weight="600">“Use the best model”</text>
+  <text x="1320" y="392" text-anchor="end" font-size="15" font-weight="600">Sol · Ultra</text>
+  <line x1="784" y1="412" x2="1320" y2="412" stroke="#e3ebe0"/>
+
+  <text x="784" y="446" font-size="12" fill="#617768">04 · 36 万 token · large_context_sticky</text>
+  <text x="784" y="474" font-size="16" font-weight="600">“Shorten this title”</text>
+  <text x="1320" y="474" text-anchor="end" font-size="15" font-weight="600">Sol · High</text>
+  <text x="784" y="496" font-size="12" fill="#315e4b">缓存边界保持，没有换成更快的模型</text>
+
+  <line x1="56" y1="552" x2="1344" y2="552" stroke="#ccd7c6"/>
+  <text x="56" y="586" font-size="13" fill="#617768">不做分类请求</text>
+  <text x="210" y="586" font-size="13" fill="#617768">客户端不能改模型</text>
+  <text x="400" y="586" font-size="13" fill="#617768">旁路可见</text>
+  <text x="1344" y="586" text-anchor="end" font-size="13" fill="#617768">github.com/Yueyue673/hermes-turn-router</text>
 </g>
 </svg>

@@ -12,17 +12,17 @@ export const ROUTER_MODE_PRESENTATION: Record<RouterControlMode, {
   auto: {
     label: 'AUTO',
     description: 'Choose a target for every new turn.',
-    className: 'border-primary/35 bg-primary/10 text-primary hover:bg-primary/15'
+    className: 'border-border/60 bg-muted/25 text-muted-foreground hover:bg-muted/40'
   },
   save: {
     label: 'SAVE',
     description: 'Prefer lower-cost targets while keeping safety floors.',
-    className: 'border-emerald-500/35 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-300'
+    className: 'border-border/60 bg-muted/25 text-muted-foreground hover:bg-muted/40'
   },
   quality: {
     label: 'QUALITY',
     description: 'Bias each turn toward stronger targets.',
-    className: 'border-amber-500/40 bg-amber-500/10 text-amber-800 hover:bg-amber-500/15 dark:text-amber-300'
+    className: 'border-border/60 bg-muted/25 text-muted-foreground hover:bg-muted/40'
   },
   off: {
     label: 'OFF',
