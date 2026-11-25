@@ -8,9 +8,9 @@
 [![Node 20+](https://img.shields.io/badge/node-20%2B-171717.svg)](package.json)
 [![Hermes 0.20.5](https://img.shields.io/badge/Hermes-0.20.5-0e7c66.svg)](docs/compatibility.md)
 
-A local, cache-aware, per-turn model router for [Hermes Agent](https://github.com/NousResearch/hermes-agent). It chooses an allowed target before each Desktop turn, keeps that decision stable through queue/retry/restart paths, and lets the Gateway—not the client—authorize the real provider, model, effort, and cost class.
+Hermes Turn Router is a local, cache-aware, per-turn model router for [Hermes Agent](https://github.com/NousResearch/hermes-agent). Before each Desktop turn, it chooses an allowed target and keeps that choice through queue, retry, and restart. The Gateway—not the client—decides the real provider, model, effort, and cost class.
 
-**No classifier request. No global model mutation. No prompt text in the Router ledger.**
+It does not make a classifier request, does not change the global model, and does not store prompt text in the Router ledger.
 
 [中文](README.zh-CN.md) · [Getting started](docs/getting-started.md) · [Architecture](docs/architecture.md) · [Compatibility](docs/compatibility.md) · [Troubleshooting](docs/troubleshooting.md) · [Latest release](https://github.com/Yueyue673/hermes-turn-router/releases/latest)
 
@@ -23,22 +23,20 @@ A local, cache-aware, per-turn model router for [Hermes Agent](https://github.co
 
 The animation is generated from the real `routeMessage()` function: simple, technical, explicit-quality, and 360K-context cache-affinity turns, followed by the tested fail-open capability path. It contains no model-generated or hand-edited routing results.
 
-## Why this exists
+A fixed strong model spends quota on routine turns. Switching models on every turn can be worse: moving a long conversation may lose a useful prompt-cache boundary and increase latency.
 
-A fixed strong model wastes quota on routine turns. Naive per-turn switching can be worse: moving a large conversation to another model may discard the useful prompt-cache boundary and increase latency.
+The router makes the decision with four inputs that belong together:
 
-Hermes Turn Router makes the decision with four inputs that belong together:
-
-- message signals and explicit mode;
-- server-allowed targets and safety floor;
+- message signals and the mode you chose;
+- server-allowed targets and the safety floor;
 - the live model **and reasoning effort**;
-- context size and switch/cache cost.
+- context size, plus the cost of switching and the effect on the cache.
 
 The incident below came from a real 691-message session. A simple explanatory turn was moved from Sol High to Luna; Luna processed roughly 388K uncached input tokens and took 30.8 seconds. Version 0.3 replays the same decision as `large_context_sticky`, keeps Sol High, and reports no switch/cache risk.
 
 ![Large-context incident replay](assets/decision-demo.svg)
 
-## What you get
+## What it does
 
 | Layer | Behavior |
 |---|---|
@@ -46,12 +44,12 @@ The incident below came from a real 691-message session. A simple explanatory tu
 | Four target tiers | Luna Medium, Sol Medium, Sol High, Sol Ultra in the reference policy |
 | Cache stability | Auto mode holds established targets for 32K+ contexts instead of marginal downgrades |
 | Explicit controls | Desktop defaults to `off`; `auto`, `save`, `quality`, and `Best once` are opt-in |
-| Server authority | Client sends an opaque target ID; Gateway resolves provider/model/effort |
+| Server authority | Client sends an opaque target ID; Gateway resolves provider, model, and effort |
 | Durable admission | SQLite lease ledger with reserved/accepted/completed states and conflict detection |
-| Fail-open UX | Capability and policy/catalog mismatch warn and bypass; the Router never swallows the user's message |
-| Truthful status | Desktop receives the model/effort actually serving the transient turn |
+| Fail-open | Capability and policy/catalog mismatch warn and bypass; the Router never swallows the user's message |
+| Actual status | Desktop receives the model and effort actually serving the transient turn |
 | Replay evaluation | Target distribution, switch rate, cache risk, expectation accuracy, usage and latency fields |
-| Safe install | Commit/checksum preflight, ZIP backup, packaged Desktop staging, rollback |
+| Safer install | Commit/checksum preflight, ZIP backup, packaged Desktop staging, rollback |
 
 ## Quick start
 
@@ -111,7 +109,7 @@ python integrations/hermes/scripts/install.py check \
   --hermes-home C:/path/to/hermes-home
 ```
 
-Install source bridge, catalog, Desktop plugin, backup, and verification:
+Install the source bridge, catalog, Desktop plugin, backup, and verification:
 
 ```bash
 python integrations/hermes/scripts/install.py install \
@@ -120,23 +118,27 @@ python integrations/hermes/scripts/install.py install \
   --full-verify
 ```
 
-For the tested Windows unpacked Desktop release, fully exit Hermes and add `--deploy-desktop`. New installs start at `OFF · NATIVE`, preserving Hermes' native model, reasoning and Fast-output controls. Choose `auto` beside the composer only when you want per-turn routing.
+For the tested Windows unpacked Desktop release, fully exit Hermes and add `--deploy-desktop`. New installs start at `OFF · NATIVE`, preserving Hermes' native model, reasoning, and Fast-output controls. Choose `auto` beside the composer only when you want per-turn routing.
 
 The complete procedure—including prerequisites, target catalog, packaged deployment, verification, and rollback—is in [Getting started](docs/getting-started.md).
 
-## How a turn moves
+## Desktop modes
 
-![Hermes Turn Router architecture](assets/architecture.svg)
+![Perceptible Router control states](assets/control-states.svg)
 
-1. Desktop scores the turn locally and sends only `targetId` plus reason metadata.
-2. Gateway checks the profile catalog, cost ceiling, cross-provider policy, and approval requirement.
-3. A SQLite lease reserves `(profile, lineage, clientTurnId)` with a server-computed prompt digest.
-4. Gateway applies the authorized target. Exact targets are no-ops; effort-only changes avoid rebuilding the provider client.
-5. One-shot state consumes only after explicit acceptance.
-6. Queue, retry, and restart paths retain the same immutable decision.
-7. Gateway completes the ledger row and restores the base runtime after the turn.
+The composer control combines color, a status dot, text, and tooltip feedback. Checking, routing, bypass, offline, native-off, selected target, and one-shot armed states are always named in words, so they do not rely on color alone. Routine Router state never creates a dismissible toast or covers the conversation.
 
-Read the full protocol in [Architecture](docs/architecture.md) and [Hermes integration](integrations/hermes/README.md).
+| Control | Meaning |
+|---|---|
+| `auto` | Re-evaluate each turn with safety, the active target, context size, and cache cost |
+| `save` | Apply a lower-cost bias directly while keeping the safety floor |
+| `quality` | Apply a stronger-target bias directly |
+| `off` | Leave selection to Hermes' native model picker—the fixed-model workflow |
+| `Best once` | Arm the unique highest `quality_rank` authorized by Gateway for the next accepted turn; disable rather than guess when rank metadata is absent or ambiguous |
+
+CLI and library users can still specify an explicit `fixed` target. Desktop does not add a second fixed-mode UI on top of Hermes' native model picker.
+
+`off` is the fresh-install default. A mode an existing user has already chosen stays in place across plugin updates.
 
 ## Reference target ladder
 
@@ -152,27 +154,23 @@ The bundled preset is an example, not a hard-coded provider dependency:
 Targets are declared twice for separate trust roles:
 
 - policy target: scoring metadata used by the local pure function;
-- Gateway catalog target: server authority over provider/model/effort/cost.
+- Gateway catalog target: server authority over provider, model, effort, and cost.
 
-Keep IDs aligned. The Gateway never trusts provider/model strings from Desktop.
+Keep IDs aligned. The Gateway never trusts provider or model strings from Desktop.
 
-## Desktop modes
+## How a turn moves
 
-![Perceptible Router control states](assets/control-states.svg)
+![Hermes Turn Router architecture](assets/architecture.svg)
 
-The Composer control combines color, status dot, text, and tooltip feedback. Mode and lifecycle are always named explicitly, so checking, routing, bypass, offline, native-off, selected target, and one-shot armed states do not rely on color alone. Routine Router state never creates a dismissible toast or covers the conversation.
+1. Desktop scores the turn locally and sends only `targetId` plus reason metadata.
+2. Gateway checks the profile catalog, cost ceiling, cross-provider policy, and approval requirement.
+3. A SQLite lease reserves `(profile, lineage, clientTurnId)` with a server-computed prompt digest.
+4. Gateway applies the authorized target. Exact targets are no-ops; effort-only changes avoid rebuilding the provider client.
+5. One-shot state is consumed only after explicit acceptance.
+6. Queue, retry, and restart paths keep the same immutable decision.
+7. Gateway completes the ledger row and restores the base runtime after the turn.
 
-| Control | Meaning |
-|---|---|
-| `auto` | Re-evaluate each turn with safety, active target, context size, and cache cost |
-| `save` | Apply a lower-cost bias directly while retaining the safety floor |
-| `quality` | Apply a stronger-target bias directly |
-| `off` | Leave selection to Hermes' native model picker—the fixed-model workflow |
-| `Best once` | Arm the unique highest `quality_rank` authorized by Gateway for the next accepted turn; disable rather than guess when rank metadata is absent or ambiguous |
-
-CLI/library users can still specify an explicit `fixed` target. Desktop does not duplicate Hermes' native model picker with a second fixed-mode UI.
-
-`off` is the fresh-install default. A mode explicitly chosen by an existing user remains persisted across plugin updates.
+Read the full protocol in [Architecture](docs/architecture.md) and [Hermes integration](integrations/hermes/README.md).
 
 ## Library API
 
@@ -202,9 +200,9 @@ const decision = routeMessage({
 - Catalog IDs are validated and bounded.
 - High-impact signals enforce a configurable minimum tier.
 - Approval tokens are short-lived HMAC tokens bound to profile, lineage, turn, target, and expiry.
-- Ledger stores hashes and lifecycle metadata, not prompt or attachment content.
+- The ledger stores hashes and lifecycle metadata, not prompt or attachment content.
 - Capability negotiation is bounded and fails open.
-- Installer refuses unsupported commits, checksum mismatch, dirty worktrees, and unsafe patch application.
+- The installer refuses unsupported commits, checksum mismatches, dirty worktrees, and unsafe patch application.
 
 See [SECURITY.md](SECURITY.md) for the threat boundary and disclosure process.
 
@@ -222,13 +220,13 @@ Full matrix: [docs/compatibility.md](docs/compatibility.md).
 
 ## Known limits
 
-- The Hermes bridge is not a stable upstream plugin API yet; it ships as a versioned patch plus external Desktop plugin.
+- The Hermes bridge is not a stable upstream plugin API yet; it ships as a versioned patch plus an external Desktop plugin.
 - The reference router is explainable heuristic scoring, not a learned semantic classifier.
 - Release bundles embed the tested Codex policy by default; custom providers require a matching local policy, Gateway catalog, and custom plugin build.
-- Automatic feedback learning and interactive approval UI are not shipped.
+- Automatic feedback learning and an interactive approval UI are not shipped.
 - `requires_approval` targets are hidden by the default Desktop control until approval UX exists.
 - macOS/Linux packaged Desktop deployment has not been verified.
-- Provider transport stalls remain provider/network failures; the Router reduces avoidable switching and reports the serving model but does not duplicate a request after a stream has opened.
+- Provider transport stalls remain provider or network failures. The Router reduces avoidable switching and reports the serving model, but it does not send another request after a stream has opened.
 
 ## Documentation
 
@@ -260,7 +258,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md), a
 
 ## Project status
 
-Version `0.5.4` defaults fresh Desktop installs to `OFF · NATIVE`, preserving Hermes' native Fast/model controls until routing is explicitly enabled. It retains v0.5.3's quiet feedback, Sol Ultra target, and explicit Gateway `quality_rank` authority.
+Version `0.5.4` defaults fresh Desktop installs to `OFF · NATIVE`, preserving Hermes' native Fast and model controls until routing is explicitly enabled. It retains v0.5.3's quiet feedback, Sol Ultra target, and explicit Gateway `quality_rank` authority.
 
 This is a community project and is not affiliated with Nous Research.
 
